@@ -41,7 +41,7 @@ Your job: Synthesize these analyses into a precise strategy classification.
 - **info_edge**: Trades on early/non-public information. Signs: enters before major events, high win rate on time-sensitive markets, speed-to-market advantage.
 - **model_based**: Uses quantitative/statistical models. Signs: high trade count (usually >2000), consistent sizing (low CV), systematic entry prices, positive Sharpe, diverse markets, algorithmic patterns.
 - **market_maker**: Provides liquidity on both sides. Signs: VERY high position count (>10K), massive volume, thin margins (win rate 45-55%, edge <0.05), small avg position size (<$10K), trades both YES and NO sides frequently.
-- **contrarian**: Bets against consensus. Signs: buys at low odds (<0.3), NO-side bias, wins from underdog bets.
+- **contrarian**: Bets against market consensus. Signs: buys at 50/50 odds when market is uncertain, trades both sides of directional markets (e.g., crypto "dip to X" AND "above Y"), moderate edge from going against crowd sentiment. Can also show: low odds entries (<0.3), NO-side bias, crypto price prediction specialist.
 - **momentum**: Follows trends. Signs: buys at high odds (>0.7), YES-side bias, enters after price moves.
 - **hedger**: Hedges across markets. Signs: paired positions, opposing bets in correlated markets, low net exposure.
 - **arbitrage**: Cross-market or cross-platform arb. Signs: near-simultaneous opposing positions, tiny margins, very high volume.
@@ -436,6 +436,17 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"High position count + consistent edge in sports = quantitative model. "
                 f"CV {cv:.2f} inflated by outlier positions, not indicative of whale behavior.")
     
+    # === MODEL_BASED RESCUE (strong Sharpe, moderate count) ===
+    # A sports trader with fewer positions (500-2000) but exceptional Sharpe (>0.8) and 
+    # strong win rate is using a quantitative model, not blindly whale-betting.
+    # Whales have inconsistent returns; high Sharpe = systematic edge.
+    if predicted == "whale" and sports_dominant and 500 <= num_positions <= 2000:
+        if sharpe is not None and sharpe > 0.8 and win_rate > 0.60:
+            _do_override("model_based",
+                f"OVERRIDE whale→model_based: sports, {num_positions} positions, "
+                f"Sharpe {sharpe:.2f} (>0.8), WR {win_rate:.0%}. "
+                f"High Sharpe + strong win rate = consistent quantitative edge, not whale.")
+    
     # === ANTI-WHALE: Small avg position + high count = NOT whale ===
     # Whales have large positions. If avg < $10K and many positions, it's model_based/scalper/MM
     if predicted == "whale" and avg_pos < 10_000 and num_positions > 3000:
@@ -481,13 +492,41 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
     # === INFO_EDGE → MODEL_BASED for high position count or moderate edge ===
     # True info_edge traders have EXCEPTIONAL accuracy (WR >75% or PF >3.0) on few bets
     # Model_based traders have MODERATE but consistent edge across many positions
+    # EXCEPTION: politics/news-heavy wallets with early entry ARE info_edge even with many positions
+    #   Info_edge traders on Polymarket can take thousands of positions across news events.
+    #   The key signal is MARKET SELECTION (politics/news) + EARLY ENTRY (low prices), not position count.
     if predicted == "info_edge" and not sports_dominant:
         is_exceptional = win_rate > 0.75 or profit_factor > 3.0
-        if not is_exceptional and num_positions > 500:
+        politics_count_ie = sum(v for c, v in cat_counts.items() if any(kw in str(c).lower() for kw in ['politic', 'news', 'election']))
+        politics_pct_ie = politics_count_ie / total_cat if total_cat > 0 else 0
+        low_entry_ie = getattr(sizing, 'avg_entry_price', 0.5) < 0.45 or getattr(sizing, 'low_odds_pct', 0) > 0.30
+        has_news_signal = politics_pct_ie > 0.25 and low_entry_ie and profit_factor > 1.1
+        
+        if not is_exceptional and not has_news_signal and num_positions > 500:
             _do_override("model_based",
                 f"OVERRIDE info_edge→model_based: {num_positions} positions with WR {win_rate:.0%}, "
-                f"PF {profit_factor:.1f}. True info_edge has exceptional accuracy (WR>75% or PF>3.0). "
+                f"PF {profit_factor:.1f}. True info_edge has exceptional accuracy (WR>75% or PF>3.0) "
+                f"or strong politics/news focus with early entry. "
                 f"This is moderate consistent edge across many positions = systematic/quantitative.")
+    
+    # === CONTRARIAN DETECTION ===
+    # Contrarian traders bet against consensus. Key signals:
+    # - Crypto-focused (price prediction markets: "dip to", "above", "below")
+    # - Entry prices near 0.50 (buying when market is uncertain/split)
+    # - Moderate edge, both sides of directional bets
+    # - NOT sports-dominant (sports has clear favorites, not contrarian plays)
+    crypto_cats = sum(v for c, v in cat_counts.items() if 'crypto' in str(c).lower())
+    crypto_pct = crypto_cats / total_cat if total_cat > 0 else 0
+    avg_entry = getattr(sizing, 'avg_entry_price', 0.5)
+    
+    if predicted in ("scalper", "model_based") and not sports_dominant and crypto_pct > 0.60:
+        # Crypto-specialist with entry near 0.50 = contrarian (betting against market consensus)
+        if 0.45 <= avg_entry <= 0.55 and 500 < num_positions < 5000:
+            _do_override("contrarian",
+                f"OVERRIDE {predicted}→contrarian: {crypto_pct:.0%} crypto markets, "
+                f"avg entry {avg_entry:.2f} (near 0.50 = buying at uncertainty), "
+                f"{num_positions} positions. Crypto price prediction specialist "
+                f"entering at consensus-split prices = contrarian strategy.")
     
     # === INFO_EDGE → MODEL_BASED for sports-dominant ===
     # Info_edge requires politics/news/crypto markets. Sports with consistent edge = model_based.
@@ -504,6 +543,15 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
             f"OVERRIDE scalper→model_based: sports-dominant, WR {win_rate:.0%} (>58%), "
             f"PF {profit_factor:.1f}. Strong consistent edge in sports = quantitative model, "
             f"not just high-frequency scalping.")
+    
+    # === SCALPER → MODEL_BASED for very high-count systematic sports trading ===
+    # Scalpers are opportunistic; model_based is systematic. Key signal: very high position
+    # count (>15K) + consistent sizing (low CV) + sports = algorithmic model, even with thin edge.
+    if predicted == "scalper" and sports_dominant and num_positions > 15_000 and cv < 0.5:
+        _do_override("model_based",
+            f"OVERRIDE scalper→model_based: {num_positions} positions (>15K), CV {cv:.2f} (<0.5), "
+            f"sports-dominant. Extremely high volume + very consistent sizing = systematic "
+            f"quantitative model, not opportunistic scalping.")
     
     # === MARKET_MAKER → MODEL_BASED for sports with real edge ===
     if predicted == "market_maker" and sports_dominant:

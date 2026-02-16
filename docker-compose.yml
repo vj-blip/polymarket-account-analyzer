@@ -1,0 +1,10 @@
+services:
+  analyzer:
+    build: .
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./skills:/app/skills
+      - ./agent/executor/prompts.py:/app/agent/executor/prompts.py
+    command: ["train"]
