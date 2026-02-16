@@ -12,16 +12,35 @@
 ## Phase 1: Baseline Score
 - [x] Run baseline eval against all 15 labeled wallets
 - [x] Record baseline composite score, strategy accuracy, evidence recall
-- [ ] Document cost/latency per wallet analysis
-- [ ] Identify failure modes (which wallets/strategies does baseline get wrong?)
+- [x] Document cost/latency per wallet analysis
+- [x] Identify failure modes (which wallets/strategies does baseline get wrong?)
 
-### Baseline Results (2026-02-16)
+### Baseline Results (2026-02-16, run 2)
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
-- **Composite score:** 0.246
-- **Strategy accuracy:** 6.7% (1/15 correct — GamblingIsAllYouNeed=model_based)
-- **Evidence recall:** 6.7%
-- **Total time:** 74s (~5s/wallet)
-- **Key issues:** Model returns "unknown" too often, misclassifies whales as market_makers/arbitrage, one parse failure (SwissMiss: returned "information_edge" not in enum)
+- **Strategy accuracy:** 33.3% (5/15 correct: SwissMiss, aenews2, anoin123, lhtsports, bobe2)
+- **Avg evidence recall:** 0.40 (failures: 0.36)
+- **Avg false claims:** 2.1 (failures: 2.6)
+
+### Cost/Latency
+- **Total time:** 177.6s (avg 11.8s/wallet)
+- **Range:** 8.3s – 18.6s per wallet
+- **Estimated cost:** ~$0.02/wallet (gpt-4o-mini analyzer + gpt-4o judge)
+
+### Failure Mode Analysis
+| Strategy | Labeled | Correct | Notes |
+|----------|---------|---------|-------|
+| whale | 3 | 0/3 | Worst category — model can't detect whale behavior |
+| model_based | 3 | 1/3 | Often misclassified |
+| market_maker | 2 | 0/2 | Never detected correctly |
+| info_edge | 3 | 3/3 | ✅ Best category |
+| scalper | 2 | 1/2 | Partial success |
+| contrarian | 1 | 0/1 | Missed |
+
+**Key patterns:**
+- Whale detection is the biggest gap (0/3) — model lacks sizing/volume analysis
+- Market maker detection fails (0/2) — needs spread/fill pattern analysis
+- Info edge is well-detected (3/3) — natural language signals are strong
+- High false claim rate (avg 2.6 on failures) — model hallucinates patterns
 
 ## Phase 2: Analysis Skills/Tools
 - [ ] **Timing Analyzer** — detect time-of-day patterns, event-driven entries, speed-to-market
