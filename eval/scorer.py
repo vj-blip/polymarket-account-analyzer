@@ -99,6 +99,7 @@ def assessment_to_score(
     assessment: JudgeAssessment,
     time_seconds: float = 0,
     tokens_used: int = 0,
+    predicted_strategy: str = "",
 ) -> EvalScore:
     """Convert a judge assessment into a numeric EvalScore."""
     total_evidence = len(gt.evidence_points) or 1
@@ -106,6 +107,8 @@ def assessment_to_score(
     
     return EvalScore(
         wallet=wallet,
+        predicted_strategy=predicted_strategy,
+        actual_strategy=gt.primary_strategy.value,
         strategy_correct=assessment.strategy_correct,
         strategy_partial=assessment.strategy_partial,
         evidence_recall=min(1.0, found_evidence / total_evidence),

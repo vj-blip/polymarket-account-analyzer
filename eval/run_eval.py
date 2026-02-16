@@ -95,6 +95,7 @@ async def evaluate_analyzer(
             gt=gt,
             assessment=assessment,
             time_seconds=elapsed,
+            predicted_strategy=thesis.primary_strategy.value if hasattr(thesis.primary_strategy, 'value') else str(thesis.primary_strategy),
         )
         scores.append(score)
         print(f"  Score: {score.composite_score:.3f} (strategy: {'✅' if score.strategy_correct else '❌'})")

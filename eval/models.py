@@ -65,6 +65,8 @@ class WalletThesis(BaseModel):
 class EvalScore(BaseModel):
     """Score for a single wallet analysis."""
     wallet: str
+    predicted_strategy: str = ""  # What the analyzer predicted
+    actual_strategy: str = ""  # Ground truth strategy
     strategy_correct: bool
     strategy_partial: bool = False  # Got secondary but not primary
     evidence_recall: float = Field(ge=0, le=1, description="% of ground truth evidence found")

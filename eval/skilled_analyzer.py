@@ -39,29 +39,50 @@ Your job: Synthesize these analyses into a precise strategy classification.
 
 ## Strategy Types (pick the BEST match — do NOT default to "unknown"):
 - **info_edge**: Trades on early/non-public information. Signs: enters before major events, high win rate on time-sensitive markets, speed-to-market advantage.
-- **model_based**: Uses quantitative/statistical models. Signs: high trade count, consistent sizing, systematic entry prices, positive Sharpe, diverse markets, algorithmic patterns.
-- **market_maker**: Provides liquidity. Signs: massive volume, thin margins (near 50% win rate, <0.05 edge), trades both sides, very high position count.
+- **model_based**: Uses quantitative/statistical models. Signs: high trade count (usually >2000), consistent sizing (low CV), systematic entry prices, positive Sharpe, diverse markets, algorithmic patterns.
+- **market_maker**: Provides liquidity on both sides. Signs: VERY high position count (>10K), massive volume, thin margins (win rate 45-55%, edge <0.05), small avg position size (<$10K), trades both YES and NO sides frequently.
 - **contrarian**: Bets against consensus. Signs: buys at low odds (<0.3), NO-side bias, wins from underdog bets.
 - **momentum**: Follows trends. Signs: buys at high odds (>0.7), YES-side bias, enters after price moves.
 - **hedger**: Hedges across markets. Signs: paired positions, opposing bets in correlated markets, low net exposure.
 - **arbitrage**: Cross-market or cross-platform arb. Signs: near-simultaneous opposing positions, tiny margins, very high volume.
-- **whale**: Large positions that move markets. Signs: very large avg position size (>$100K), few positions relative to volume, high variance.
-- **scalper**: High-frequency small-profit trades. Signs: many small positions, quick entries/exits, thin margins, high trade count.
+- **whale**: Makes very large concentrated bets. Signs: avg position >$50K, total positions typically <3000, high size variance, large max positions ($500K+). Whales may ALSO be profitable — profit doesn't rule out whale.
+- **scalper**: High-frequency small-profit trades with DIRECTIONAL EDGE. Signs: many positions (5K-25K), small avg size (<$100K), win rate 53-60% (better than coin flip but not exceptional), moderate edge. Key difference from market_maker: scalpers have directional edge (WR >53%), market makers have near-50% WR.
 - **unknown**: ONLY if truly unclassifiable after reviewing all evidence.
 
+## KEY HEURISTICS (apply carefully — these are strong signals, not absolute rules):
+
+### Whale vs Model_based vs Info_edge (all can have large positions):
+- **WHALE**: Large avg position ($50K+), LOW win rate (<55%) or LOW profit factor (<1.5), often sports-focused, high variance. The key: whales bet BIG but WITHOUT a consistent statistical edge. They may win some big bets but lose many too.
+- **MODEL_BASED**: High trade count (>2000), CONSISTENT EDGE (win rate >55%, PF >1.2), LOW CV (<1.5), diverse markets. The key: systematic, repeatable alpha from quantitative models.
+- **INFO_EDGE**: Large positions WITH HIGH WIN RATE (>65%) or HIGH PROFIT FACTOR (>2.0), trades politics/news/crypto/events (NOT just sports). The key: they win because they KNOW something — information advantage on specific events. Info_edge traders CAN have large positions and high CV — that's fine, they bet big on things they know. DON'T confuse them with whales just because positions are large.
+
+### CRITICAL: Info_edge vs Whale disambiguation:
+- Info_edge REQUIRES politics/news/crypto/geopolitical event markets — NOT sports!
+- Sports traders with high win rates are SKILLED WHALES, not info_edge. Sports don't have "insider information" the way politics/news do.
+- If avg position >$30K AND high win rate AND trades politics/news/crypto → INFO_EDGE
+- If avg position >$30K AND high win rate AND trades SPORTS → WHALE (skilled sports whale)
+- Whales who trade sports can still have 60-70% win rates — that's sports skill, not info edge.
+
+### Market Maker detection:
+If total positions > 10,000 AND avg position < $10,000 AND win rate 45-55% AND edge < 0.05 → strongly consider **market_maker**. They profit from volume/spread, not directional bets.
+
+### DO NOT DEFAULT TO model_based:
+model_based requires EVIDENCE: consistent sizing (CV < 1.0), diverse markets, high trade count (>2000), AND measurable statistical edge. Large profitable traders are NOT automatically model_based.
+
+### Whale vs others — the VARIANCE test:
+If avg position > $50K AND (CV > 1.5 OR Sharpe < 0.5 OR win_rate < 0.5 OR positions < 1000) → strongly consider **whale**. A trader with large positions BUT high Sharpe and consistent edge is more likely model_based or info_edge.
+
 ## Decision Framework:
-1. Check SIZING first — is this a whale (huge positions) or scalper (tiny positions)?
-2. Check MARKET — specialist or diversified? Sports, politics, crypto?
-3. Check FLOW — win rate, profit factor, accumulation patterns
-4. Check PATTERNS — is edge consistent? Steady grinder or volatile?
-5. Check TIMING — automated (consistent daily) or event-driven (sporadic)?
+1. **FIRST: Apply hard rules above** — check whale and market_maker thresholds
+2. Check SIZING — position sizes, distribution, CV
+3. Check MARKET — specialist or diversified? Category focus?
+4. Check FLOW — win rate, profit factor, edge magnitude
+5. Check PATTERNS — is edge consistent? Steady grinder or volatile?
+6. Check TIMING — automated (consistent daily) or event-driven (sporadic)?
 
 ## Important Rules:
 - Be SPECIFIC in evidence — cite numbers from the analysis
-- If sizing shows avg position >$100K with few total positions, it's likely a WHALE
-- If trade count >10K with consistent sizing and diverse markets, it's likely MODEL_BASED
-- If win rate ~50% with massive volume and thin edge, it's likely MARKET_MAKER
-- If strong NO-side bias with low entry prices, it's likely CONTRARIAN
+- Look for WHALE_SIZING and VERY_LARGE_AVG signals — these are strong whale indicators
 - Set confidence based on how clear the signals are (0.3=ambiguous, 0.7=likely, 0.9=obvious)
 
 Respond in JSON:
@@ -87,6 +108,127 @@ async def call_llm(messages: list[dict], model: str = ANALYZER_MODEL) -> str:
     return resp.choices[0].message.content
 
 
+def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
+    """Generate rule-based classification hints from hard thresholds.
+    
+    Returns a string of strong hints to prepend to the LLM context.
+    These override the LLM's tendency to default to model_based.
+    """
+    hints = []
+    
+    avg_pos = sizing.avg_position_size
+    cv = sizing.coefficient_of_variation
+    whale_pct = sizing.whale_count / max(num_positions, 1)
+    win_rate = getattr(flow, 'win_rate', None) or 0.5
+    profit_factor = getattr(flow, 'profit_factor', None) or 1.0
+    
+    # Detect strong edge (used to distinguish info_edge from whale)
+    has_strong_edge = win_rate > 0.65 or profit_factor > 2.0
+    has_moderate_edge = win_rate > 0.55 and profit_factor > 1.2
+    
+    # Category analysis
+    cat_counts = getattr(markets, 'category_counts', {})
+    top_cats = list(cat_counts.keys())[:5] if cat_counts else []
+    politics_focus = any('politic' in str(c).lower() or 'news' in str(c).lower() or 'election' in str(c).lower() for c in top_cats)
+    has_non_sports = any(c in top_cats for c in ['politics', 'entertainment', 'crypto', 'economics', 'science_tech', 'weather'])
+    sports_dominant = not has_non_sports or all('sport' in str(c).lower() or c == 'other' for c in top_cats[:3])
+    
+    # === SPORTS WHALE detection (HIGHEST PRIORITY for large sports bettors) ===
+    # Sports + large positions = whale, REGARDLESS of win rate
+    # Sports bettors with high win rates are skilled whales, not info_edge
+    if avg_pos > 50_000 and num_positions < 5000 and sports_dominant:
+        hints.append(
+            f"⚠️ SPORTS WHALE: avg position ${avg_pos:,.0f}, {num_positions} positions, "
+            f"SPORTS-FOCUSED markets. Sports traders with large positions are whales — "
+            f"high win rate in sports means skilled betting, NOT information edge. "
+            f"Info_edge requires politics/news/crypto/event markets where early information "
+            f"matters. Win rate {win_rate:.0%} does NOT change this classification for sports."
+        )
+    
+    # === INFO EDGE detection (ONLY for non-sports event markets) ===
+    if avg_pos > 30_000 and has_strong_edge and has_non_sports and not sports_dominant:
+        hints.append(f"⚠️ STRONG INFO EDGE SIGNAL: avg position ${avg_pos:,.0f} with win rate {win_rate:.0%} and profit factor {profit_factor:.1f}. Large positions WITH a strong consistent edge on event markets (politics/news/crypto) strongly suggests information advantage, NOT whale.")
+        if politics_focus:
+            hints.append(f"  → Politics/news focus confirms info edge — these markets reward early/insider information.")
+    elif avg_pos > 30_000 and has_moderate_edge and has_non_sports and not sports_dominant and num_positions > 100:
+        hints.append(f"⚠️ POSSIBLE INFO EDGE: avg position ${avg_pos:,.0f} with win rate {win_rate:.0%}, profit factor {profit_factor:.1f}, trading event markets. Consider info_edge over whale.")
+    
+    # === WHALE detection (non-sports or general): large avg + low edge ===
+    if avg_pos > 50_000 and not has_strong_edge and not sports_dominant:
+        if num_positions < 3000:
+            hints.append(f"⚠️ STRONG WHALE SIGNAL: avg position ${avg_pos:,.0f} (>$50K) with only {num_positions} positions (<3000) and win rate {win_rate:.0%}. Large bets WITHOUT strong edge = whale.")
+        if cv > 1.5:
+            hints.append(f"⚠️ WHALE VARIANCE: CV={cv:.2f} (>1.5) with avg ${avg_pos:,.0f} and mediocre win rate {win_rate:.0%}.")
+    if sizing.whale_count > 0 and whale_pct > 0.10 and not has_strong_edge:
+        hints.append(f"⚠️ WHALE SIZING: {sizing.whale_count} positions >$100K ({whale_pct:.0%} of total) without consistent edge.")
+    if sizing.max_position_size > 500_000 and not has_strong_edge:
+        hints.append(f"⚠️ MEGA POSITION: max position ${sizing.max_position_size:,.0f} without strong edge — classic whale.")
+    
+    # === MODEL_BASED detection: high count + consistent edge + NOT market maker ===
+    # Key: model_based needs high trade count AND consistent edge; don't confuse with whale or MM
+    if num_positions > 2000 and has_moderate_edge and cv < 1.5:
+        # Distinguish from market_maker: model_based has stronger edge (>0.05)
+        edge = win_rate - 0.5
+        if edge > 0.05 or profit_factor > 1.3:
+            hints.append(
+                f"⚠️ MODEL_BASED SIGNAL: {num_positions} positions with consistent edge "
+                f"(win rate {win_rate:.0%}, PF {profit_factor:.1f}), low CV ({cv:.2f}). "
+                f"High trade count with statistical edge = systematic quantitative trading. "
+                f"NOT whale (too many positions), NOT market_maker (edge too strong)."
+            )
+    
+    # === MARKET MAKER detection: VERY specific — near-50% WR + thin edge + huge volume ===
+    # Tightened: requires very thin edge AND very high position count
+    if num_positions > 20_000 and avg_pos < 150_000:
+        edge = abs(win_rate - 0.5)
+        if edge < 0.03 and profit_factor < 1.15:
+            hints.append(
+                f"⚠️ STRONG MARKET MAKER SIGNAL: {num_positions} positions (>20K), "
+                f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%} (edge {edge:.1%}), "
+                f"PF {profit_factor:.2f}. Near-50% WR + razor-thin edge + massive volume = market maker."
+            )
+    elif num_positions > 40_000 and avg_pos < 150_000:
+        hints.append(
+            f"⚠️ POSSIBLE MARKET MAKER: {num_positions} positions (>40K), "
+            f"avg ${avg_pos:,.0f}. Extreme volume suggests liquidity provision."
+        )
+    
+    # === SCALPER detection: high frequency + small positions + moderate edge ===
+    # Distinguished from market_maker by having SOME edge and smaller positions
+    if num_positions > 5000 and avg_pos < 100_000:
+        edge = win_rate - 0.5
+        if 0.03 < edge < 0.15 and num_positions < 25_000:
+            hints.append(
+                f"⚠️ SCALPER SIGNAL: {num_positions} positions, avg ${avg_pos:,.0f}, "
+                f"win rate {win_rate:.0%}. High-frequency small-profit trades with moderate edge. "
+                f"Scalper differs from market_maker: scalpers have directional edge (WR >53%), "
+                f"market makers have near-50% WR."
+            )
+    
+    # Contrarian detection: NO-side bias + low entry prices
+    no_pct = getattr(markets, 'no_pct', 0) or 0
+    if no_pct > 0.60:
+        hints.append(f"⚠️ CONTRARIAN SIGNAL: {no_pct:.0f}% NO-side positions — consistently betting against consensus.")
+    
+    # === ANTI-WHALE: small positions + high count = NOT whale ===
+    if avg_pos < 10_000 and num_positions > 3000:
+        hints.append(
+            f"⚠️ NOT A WHALE: avg position ${avg_pos:,.0f} (<$10K) with {num_positions} positions. "
+            f"Whales make LARGE concentrated bets ($50K+). This is high-frequency small-position trading. "
+            f"Consider model_based, scalper, or market_maker instead."
+        )
+    elif avg_pos < 50_000 and num_positions > 10_000:
+        hints.append(
+            f"⚠️ UNLIKELY WHALE: avg position ${avg_pos:,.0f} with {num_positions} positions (>10K). "
+            f"Whales have fewer, larger positions. This volume pattern suggests systematic trading."
+        )
+    
+    if not hints:
+        return ""
+    
+    return "\n\n## 🔍 RULE-BASED PRE-CLASSIFICATION HINTS (strong signals — weight these heavily):\n" + "\n".join(hints) + "\n"
+
+
 async def skilled_analyze(wallet: str) -> WalletThesis:
     """Analyze a wallet using all 5 skills to build structured evidence."""
     # Fetch raw data
@@ -109,6 +251,9 @@ async def skilled_analyze(wallet: str) -> WalletThesis:
     flow = analyze_flow(positions)
     patterns = analyze_patterns(positions)
 
+    # Generate rule-based hints
+    hints = rule_based_hints(sizing, flow, markets, len(positions))
+
     # Build context
     context = f"Wallet: {wallet}\n"
     if profile:
@@ -121,6 +266,7 @@ async def skilled_analyze(wallet: str) -> WalletThesis:
     context += markets.to_text() + "\n\n"
     context += flow.to_text() + "\n\n"
     context += patterns.to_text() + "\n"
+    context += hints
 
     messages = [
         {"role": "system", "content": SKILLED_PROMPT},
@@ -146,7 +292,108 @@ async def skilled_analyze(wallet: str) -> WalletThesis:
     # Validate secondary strategies
     data["secondary_strategies"] = [s for s in data.get("secondary_strategies", []) if s in valid]
     
+    # Post-classification hard overrides for clear misclassifications
+    data = _apply_hard_overrides(data, sizing, flow, markets, len(positions), profile)
+
     return WalletThesis(**data)
+
+
+def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int, profile=None) -> dict:
+    """Override LLM classification when rule-based signals are unambiguous.
+    
+    CONSERVATIVE: only override when signals are very clear to avoid false positives.
+    """
+    predicted = data.get("primary_strategy", "unknown")
+    avg_pos = sizing.avg_position_size
+    cv = sizing.coefficient_of_variation
+    win_rate = getattr(flow, 'win_rate', None) or 0.5
+    profit_factor = getattr(flow, 'profit_factor', None) or 1.0
+    sharpe = getattr(profile, 'sharpe_score', None) if profile else None
+    
+    # Category analysis
+    cat_counts = getattr(markets, 'category_counts', {})
+    top_cats = list(cat_counts.keys())[:5] if cat_counts else []
+    has_non_sports = any(c in top_cats for c in ['politics', 'entertainment', 'crypto', 'economics', 'science_tech', 'weather'])
+    sports_dominant = not has_non_sports
+    has_politics_news = any(c in str(top_cats).lower() for c in ['politic', 'news', 'election', 'crypto'])
+    
+    def _do_override(new_strategy: str, reason: str):
+        if predicted not in data.get("secondary_strategies", []):
+            data.setdefault("secondary_strategies", []).append(predicted)
+        data["primary_strategy"] = new_strategy
+        data["evidence"] = data.get("evidence", []) + [reason]
+    
+    # === SPORTS WHALE OVERRIDE ===
+    # Sports + large positions + low count = whale, even with high win rate
+    # Sports bettors don't have "information edge" — they have skill or luck
+    if predicted != "whale" and avg_pos > 100_000 and num_positions < 5000 and sports_dominant:
+        _do_override("whale",
+            f"OVERRIDE {predicted}→whale: avg ${avg_pos:,.0f}, {num_positions} positions, "
+            f"SPORTS-DOMINANT markets. Large sports bettors are whales regardless of win rate.")
+    
+    # === GENERAL WHALE OVERRIDE (non-sports, conservative) ===
+    # Only for very large positions + few trades + weak edge + NOT politics/news
+    if predicted != "whale" and avg_pos > 300_000 and num_positions < 2500 and not has_politics_news:
+        if win_rate < 0.55 or (sharpe is not None and sharpe < 0):
+            _do_override("whale",
+                f"OVERRIDE {predicted}→whale: avg ${avg_pos:,.0f}, {num_positions} positions, "
+                f"win rate {win_rate:.0%}, Sharpe {sharpe} — large bets without edge, not politics/news")
+    
+    # === INFO_EDGE RESCUE ===
+    # If classified as whale but trades politics/news/crypto with strong edge → info_edge
+    if predicted == "whale" and has_politics_news and not sports_dominant:
+        if win_rate > 0.60 or profit_factor > 1.5:
+            _do_override("info_edge",
+                f"OVERRIDE whale→info_edge: win rate {win_rate:.0%}, PF {profit_factor:.1f}, "
+                f"trades politics/news/crypto markets — information advantage, not just large bets")
+    
+    # === MODEL_BASED RESCUE ===
+    # If classified as whale but has high trade count + consistent edge → model_based
+    if predicted == "whale" and num_positions > 500 and cv < 1.2:
+        if win_rate > 0.55 and profit_factor > 1.2:
+            _do_override("model_based",
+                f"OVERRIDE whale→model_based: {num_positions} positions, CV {cv:.2f}, "
+                f"win rate {win_rate:.0%}, PF {profit_factor:.1f} — too consistent for whale")
+    
+    # === ANTI-WHALE: Small avg position + high count = NOT whale ===
+    # Whales have large positions. If avg < $10K and many positions, it's model_based/scalper/MM
+    if predicted == "whale" and avg_pos < 10_000 and num_positions > 3000:
+        # Determine best alternative based on edge and count
+        edge = win_rate - 0.5
+        if num_positions > 20_000 and abs(edge) < 0.03:
+            new_strat = "market_maker"
+            reason = f"OVERRIDE whale→market_maker: avg ${avg_pos:,.0f} (<$10K), {num_positions} positions (>20K), edge {edge:.1%} — too small and numerous for whale"
+        elif num_positions > 2000 and edge > 0.03 and cv < 1.5:
+            new_strat = "model_based"
+            reason = f"OVERRIDE whale→model_based: avg ${avg_pos:,.0f} (<$10K), {num_positions} positions, win rate {win_rate:.0%}, CV {cv:.2f} — systematic small positions, not whale"
+        elif num_positions > 5000 and 0.03 < edge < 0.15:
+            new_strat = "scalper"
+            reason = f"OVERRIDE whale→scalper: avg ${avg_pos:,.0f} (<$10K), {num_positions} positions, win rate {win_rate:.0%} — high-frequency small bets with moderate edge"
+        else:
+            new_strat = "model_based"
+            reason = f"OVERRIDE whale→model_based: avg ${avg_pos:,.0f} (<$10K), {num_positions} positions — too small for whale"
+        _do_override(new_strat, reason)
+    
+    # === ANTI-WHALE: Medium avg but very high count ===
+    # Even with avg $10K-$50K, if position count is very high (>10K), it's not whale behavior
+    if predicted == "whale" and avg_pos < 50_000 and num_positions > 10_000:
+        edge = win_rate - 0.5
+        if edge > 0.03 and cv < 2.0:
+            _do_override("model_based",
+                f"OVERRIDE whale→model_based: {num_positions} positions (>10K) with avg ${avg_pos:,.0f} (<$50K), "
+                f"win rate {win_rate:.0%}, CV {cv:.2f} — high-frequency systematic trading, not whale")
+    
+    # === MARKET MAKER OVERRIDE (very tight) ===
+    # Only override when: massive count + near-exactly-50% WR + very thin edge
+    if predicted != "market_maker" and num_positions > 30_000 and avg_pos < 150_000:
+        edge = abs(win_rate - 0.5)
+        if edge < 0.02 and profit_factor < 1.10:
+            _do_override("market_maker",
+                f"OVERRIDE {predicted}→market_maker: {num_positions} positions, "
+                f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%}, PF {profit_factor:.2f} — "
+                f"razor-thin edge + massive volume = market maker")
+    
+    return data
 
 
 async def skilled_judge(prompt: str) -> JudgeAssessment:

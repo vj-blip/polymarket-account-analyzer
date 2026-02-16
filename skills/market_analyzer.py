@@ -9,16 +9,33 @@ from dataclasses import dataclass, field
 # Keyword-based category detection
 CATEGORY_RULES = [
     ("sports_betting", [
-        r"spread", r"moneyline", r"over/under", r"total points", r"total goals",
+        # Game formats: "Team A vs. Team B", "Team A vs Team B", "Spread: Team (-X)"
+        r"\bvs\.?\s", r"\bvs\b",
+        # Common bet types
+        r"spread", r"moneyline", r"over/under", r"\bo/u\b", r"total points", r"total goals",
+        # Leagues
         r"\bnfl\b", r"\bnba\b", r"\bmlb\b", r"\bnhl\b", r"\bmls\b",
         r"\bncaa\b", r"college", r"premier league", r"la liga", r"serie a",
         r"bundesliga", r"ligue 1", r"champions league", r"europa league",
-        r"\bufc\b", r"\bwwe\b", r"boxing", r"tennis", r"golf",
+        r"\bufc\b", r"\bwwe\b", r"boxing", r"tennis", r"golf", r"super bowl",
+        # "Will X win" patterns (common Polymarket sports format)
         r"will .+ win on \d{4}", r"will .+ win against",
-        r"will .+ beat", r"man city", r"man utd", r"liverpool",
-        r"esport", r"\blol\b", r"league of legends", r"\bdota\b", r"\bcs2?\b",
+        r"will .+ win .+ \d{4}", r"will .+ beat",
+        # Team names (major)
+        r"man city", r"man utd", r"liverpool",
         r"villarreal", r"atletico", r"barcelona", r"real madrid",
         r"lakers", r"celtics", r"warriors", r"yankees", r"dodgers",
+        r"seahawks", r"packers", r"patriots", r"bears", r"rams",
+        r"chiefs", r"eagles", r"cowboys", r"49ers", r"ravens",
+        r"bills", r"dolphins", r"steelers", r"bengals", r"broncos",
+        r"knicks", r"nets", r"rockets", r"nuggets", r"heat",
+        r"bucks", r"suns", r"clippers", r"spurs", r"mavericks",
+        r"oilers", r"penguins", r"capitals", r"blackhawks", r"canadiens",
+        r"panthers", r"flames", r"sharks", r"stars", r"wild",
+        r"magic", r"raptors", r"pelicans", r"wizards", r"pistons",
+        r"timberwolves", r"pacers", r"cavaliers", r"grizzlies",
+        # Esports
+        r"esport", r"\blol\b", r"league of legends", r"\bdota\b", r"\bcs2?\b",
     ]),
     ("politics", [
         r"president", r"election", r"trump", r"biden", r"vote", r"congress",

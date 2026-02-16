@@ -58,11 +58,21 @@
 - **Strategy accuracy:** 26.7% (4/15 correct — up from 1/15)
 - **Evidence recall:** 40.0% (up from 6.7%)
 - **Total time:** 286s (~19s/wallet)
-- **Correct strategies:** RN1=model_based, GamblingIsAllYouNeed=model_based, S-Works=model_based, MCgenius=whale
-- **Key issues:** Still misclassifies whales as model_based, market_makers as model_based/scalper, info_edge as whale. Model defaults to model_based too often. Needs better whale/MM heuristics in prompt.
+- **Key issues:** Misclassifies model_based as whale, info_edge as whale. Model defaults to model_based too often.
+
+### Skilled v2 Results (2026-02-16) — Anti-whale overrides
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.516 (+8% vs v1, +110% vs baseline)
+- **Strategy accuracy:** 42.9% (6/14, 1 judge error)
+- **Evidence recall:** 45.7%
+- **Total time:** 213s (~15s/wallet)
+- **Fixed:** lhtsports whale→scalper ✅
+- **Improved:** RN1 whale→scalper (closer to model_based), GamblingIsAllYouNeed whale→market_maker (partial)
+- **Still failing:** RN1/S-Works model_based detection, aenews2 info_edge detection, judge schema errors on bobe2
 
 ## Phase 3: Improve Skilled Analyzer
-- [ ] Fix whale detection (avg position >$100K + low position count should strongly signal whale)
+- [x] Fix whale over-classification (anti-whale overrides for small avg + high count)
+- [ ] Fix model_based under-detection (RN1, S-Works still misclassified)
 - [ ] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
 - [ ] Fix info_edge detection (high win rate on politics/events + sporadic timing)
 - [ ] Reduce model_based over-classification bias
@@ -84,4 +94,4 @@
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
 - **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
-- **Best agent score:** 0.479 (skilled v1)
+- **Best agent score:** 0.516 (skilled v2, anti-whale overrides)

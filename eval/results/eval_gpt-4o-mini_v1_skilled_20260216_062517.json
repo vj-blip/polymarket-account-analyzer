@@ -1,0 +1,172 @@
+{
+  "scores": [
+    {
+      "wallet": "0x6A72f61820b26b1fe4d956E17B6DC2A1Ea3033EE",
+      "strategy_correct": true,
+      "strategy_partial": false,
+      "evidence_recall": 1.0,
+      "false_claims": 0,
+      "specificity": 0.5,
+      "confidence_calibration": 0.7,
+      "time_seconds": 11.47787618637085,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x2005D16a84CEEfa912D4e380cD32E7ff827875Ea",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.0,
+      "time_seconds": 34.50386643409729,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x204f72f35326db932158CBA6AdfF0B9A1DA95e14",
+      "strategy_correct": true,
+      "strategy_partial": false,
+      "evidence_recall": 0.6,
+      "false_claims": 0,
+      "specificity": 0.5,
+      "confidence_calibration": 0.7,
+      "time_seconds": 51.29660391807556,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x14964aeFa2cd7CaFf7878B3820A690A03c5Aa429",
+      "strategy_correct": true,
+      "strategy_partial": false,
+      "evidence_recall": 0.6,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.7,
+      "time_seconds": 12.057998418807983,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xDBADe4c82fb72780A0dB9A38f821D8671Aba9C95",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 3,
+      "specificity": 0.5,
+      "confidence_calibration": 0.3,
+      "time_seconds": 9.237834453582764,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x507E52ef684CA2dD91F90a9d26D149Dd3288BEae",
+      "strategy_correct": false,
+      "strategy_partial": true,
+      "evidence_recall": 0.2,
+      "false_claims": 2,
+      "specificity": 0.5,
+      "confidence_calibration": 0.4,
+      "time_seconds": 29.3261296749115,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xeE00ba338C59557141789b127927a55f5cC5cEa1",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.2,
+      "time_seconds": 17.99023127555847,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x44c1DfE43260C94Ed4F1D00dE2e1f80Fb113Ebc1",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.2,
+      "false_claims": 3,
+      "specificity": 0.5,
+      "confidence_calibration": 0.3,
+      "time_seconds": 12.225282669067383,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xf705fa045201391D9632b7f3cde06a5e24453Ca7",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.0,
+      "time_seconds": 9.520238161087036,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x0b9CAe2B0dfe7a71c413E0604EaAC1C352f87e44",
+      "strategy_correct": true,
+      "strategy_partial": false,
+      "evidence_recall": 0.6,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.7,
+      "time_seconds": 10.021732807159424,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x96489Abcb9f583D6835c8eF95FFc923D05A86825",
+      "strategy_correct": false,
+      "strategy_partial": true,
+      "evidence_recall": 0.4,
+      "false_claims": 1,
+      "specificity": 0.5,
+      "confidence_calibration": 0.3,
+      "time_seconds": 10.32887315750122,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xee613B3FC183ee44F9Da9c05F53e2Da107E3DeBf",
+      "strategy_correct": true,
+      "strategy_partial": false,
+      "evidence_recall": 0.4,
+      "false_claims": 2,
+      "specificity": 0.5,
+      "confidence_calibration": 0.7,
+      "time_seconds": 32.89107394218445,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xa6A856A8c8A7f14fD9BE6Ae11C367c7Cbb755009",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 5,
+      "specificity": 0.5,
+      "confidence_calibration": 0.3,
+      "time_seconds": 15.77328085899353,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0x63CE342161250D705dC0b16dF89036C8E5F9Ba9a",
+      "strategy_correct": false,
+      "strategy_partial": false,
+      "evidence_recall": 0.0,
+      "false_claims": 2,
+      "specificity": 0.5,
+      "confidence_calibration": 0.0,
+      "time_seconds": 22.60386562347412,
+      "tokens_used": 0
+    },
+    {
+      "wallet": "0xEd107a85a4585A381E48C7F7Ca4144909e7Dd2E5",
+      "strategy_correct": false,
+      "strategy_partial": true,
+      "evidence_recall": 0.6,
+      "false_claims": 2,
+      "specificity": 0.5,
+      "confidence_calibration": 0.3,
+      "time_seconds": 6.979315280914307,
+      "tokens_used": 0
+    }
+  ],
+  "model": "gpt-4o-mini",
+  "skills_version": "v1_skilled",
+  "timestamp": "2026-02-16T06:25:17.166713+00:00"
+}
