@@ -1,1 +1,287 @@
-[]
+[
+  {
+    "wallet": "0x6A72f61820b26b1fe4d956E17B6DC2A1Ea3033EE",
+    "username": "kch123",
+    "primary_strategy": "whale",
+    "secondary_strategies": ["model_based"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "Extremely large position sizes averaging $646K with max $2M", "importance": 0.9, "category": "sizing"},
+      {"description": "Only 2467 positions across massive $229M volume - few huge bets", "importance": 0.8, "category": "sizing"},
+      {"description": "Diverse sports markets (NFL spreads, NHL, college basketball)", "importance": 0.5, "category": "market_selection"},
+      {"description": "Entry prices around 0.48 - buying near 50/50 odds with size advantage", "importance": 0.6, "category": "other"},
+      {"description": "61% win rate with 0.22 edge across 1538 algo positions", "importance": 0.7, "category": "other"}
+    ],
+    "notes": "Classic whale pattern: few very large bets across sports markets. $9.4M PnL from $229M volume with avg position $646K. Low position count relative to volume is hallmark whale behavior. Negative Sharpe (-0.55) suggests high variance concentrated bets.",
+    "pnl_total": 9373057.08,
+    "volume_total": 228991115.98,
+    "win_rate_30d": 0.1429,
+    "total_trades": 2467
+  },
+  {
+    "wallet": "0x2005D16a84CEEfa912D4e380cD32E7ff827875Ea",
+    "username": "RN1",
+    "primary_strategy": "model_based",
+    "secondary_strategies": ["scalper"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "26,213 algo positions - extremely high trade count indicates systematic approach", "importance": 0.9, "category": "other"},
+      {"description": "Strong positive Sharpe ratio of 1.10 - consistent returns", "importance": 0.9, "category": "other"},
+      {"description": "Moderate position sizes avg $88K with controlled std dev", "importance": 0.7, "category": "sizing"},
+      {"description": "Trades across diverse markets (NFL, LoL esports, tennis, soccer)", "importance": 0.8, "category": "market_selection"},
+      {"description": "Entry prices avg 0.375 - systematically buying underpriced outcomes", "importance": 0.8, "category": "other"}
+    ],
+    "notes": "High-volume systematic trader with 26K+ positions and Sharpe of 1.10. Consistent sizing, diverse market selection, and low entry prices suggest a statistical model identifying underpriced outcomes. 39,802 total positions across sports/esports/soccer. 100% 30d win rate with 0.24 edge.",
+    "pnl_total": 4385380.62,
+    "volume_total": 204154472.79,
+    "win_rate_30d": 1.0,
+    "total_trades": 39802
+  },
+  {
+    "wallet": "0x204f72f35326db932158CBA6AdfF0B9A1DA95e14",
+    "username": "swisstony",
+    "primary_strategy": "market_maker",
+    "secondary_strategies": ["model_based"],
+    "difficulty": "medium",
+    "evidence_points": [
+      {"description": "Highest volume of all candidates at $370M with 69,320 positions", "importance": 0.9, "category": "sizing"},
+      {"description": "Win rate near 51% with only 0.02 edge - thin margins, high volume", "importance": 0.9, "category": "other"},
+      {"description": "39,011 algo positions - massive systematic activity", "importance": 0.8, "category": "other"},
+      {"description": "Entry prices avg 0.451 - trading near mid-market", "importance": 0.7, "category": "other"},
+      {"description": "Focused on soccer/football will-win markets (Man City, West Ham, PSG, Arsenal, Bayern)", "importance": 0.6, "category": "market_selection"}
+    ],
+    "notes": "Extremely high volume ($370M) with razor-thin edge (0.02) and near-50% win rate strongly suggests market making. 69K positions with controlled sizing ($268K avg). Positive but modest Sharpe (0.36). Focus on European soccer markets. Makes money on volume not conviction.",
+    "pnl_total": 4007099.32,
+    "volume_total": 369575681.75,
+    "win_rate_30d": 0.5714,
+    "total_trades": 69320
+  },
+  {
+    "wallet": "0x14964aeFa2cd7CaFf7878B3820A690A03c5Aa429",
+    "username": "gmpm",
+    "primary_strategy": "whale",
+    "secondary_strategies": ["momentum"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "Average position $433K with max $2.67M - very large concentrated bets", "importance": 0.9, "category": "sizing"},
+      {"description": "Only 997 positions for $82M volume - low frequency, high conviction", "importance": 0.8, "category": "sizing"},
+      {"description": "High size variance (std $388K) - inconsistent sizing typical of conviction-based whale", "importance": 0.7, "category": "sizing"},
+      {"description": "Focused on NFL spreads and game outcomes", "importance": 0.6, "category": "market_selection"},
+      {"description": "Negative Sharpe (-0.51) with 53% winrate - high variance outcomes", "importance": 0.5, "category": "other"}
+    ],
+    "notes": "Clear whale pattern with $3.7M PnL from only 997 positions. Max single position $2.67M. Focused on NFL/sports spreads. High size variance and negative Sharpe indicate lumpy, conviction-driven large bets rather than systematic approach.",
+    "pnl_total": 3698070.95,
+    "volume_total": 81839000.21,
+    "win_rate_30d": 0.1429,
+    "total_trades": 997
+  },
+  {
+    "wallet": "0xDBADe4c82fb72780A0dB9A38f821D8671Aba9C95",
+    "username": "SwissMiss",
+    "primary_strategy": "model_based",
+    "secondary_strategies": ["momentum"],
+    "difficulty": "medium",
+    "evidence_points": [
+      {"description": "High winrate 64% with strong 0.28 edge across 727 positions", "importance": 0.9, "category": "other"},
+      {"description": "Strong Sharpe of 0.97 - consistent positive returns", "importance": 0.8, "category": "other"},
+      {"description": "Diverse sports markets (college football, NBA, spreads)", "importance": 0.7, "category": "market_selection"},
+      {"description": "Entry prices avg 0.477 - buying near mid-market with statistical edge", "importance": 0.6, "category": "other"},
+      {"description": "Moderate position count (746) with controlled sizing", "importance": 0.5, "category": "sizing"}
+    ],
+    "notes": "Strong statistical edge (0.28) with 64% winrate and near-1.0 Sharpe suggests model-based approach. 746 positions across diverse sports. Good ROI (4.56%). Medium difficulty because the moderate position count and mixed sports could also indicate expert sports knowledge rather than pure model.",
+    "pnl_total": 3027995.08,
+    "volume_total": 66381340.85,
+    "win_rate_30d": 1.0,
+    "total_trades": 746
+  },
+  {
+    "wallet": "0x507E52ef684CA2dD91F90a9d26D149Dd3288BEae",
+    "username": "GamblingIsAllYouNeed",
+    "primary_strategy": "model_based",
+    "secondary_strategies": ["market_maker"],
+    "difficulty": "medium",
+    "evidence_points": [
+      {"description": "27,013 algo positions - extremely systematic high-frequency trading", "importance": 0.9, "category": "other"},
+      {"description": "Very consistent position sizing (avg $137K, std only $49K)", "importance": 0.8, "category": "sizing"},
+      {"description": "Thin edge (0.08) with 54% winrate - statistical approach", "importance": 0.7, "category": "other"},
+      {"description": "Diverse markets: soccer, NBA, NFL, college sports", "importance": 0.6, "category": "market_selection"},
+      {"description": "Entry prices near 0.49 - trading near fair value across many markets", "importance": 0.6, "category": "other"}
+    ],
+    "notes": "High-volume systematic trader with 27K+ positions and very tight position sizing. 54% winrate with 0.08 edge across diverse sports. Could be model-based or market-making given the thin margins and high volume. Medium difficulty due to ambiguity between model and MM strategies.",
+    "pnl_total": 2815955.81,
+    "volume_total": 202235990.22,
+    "win_rate_30d": 0.4286,
+    "total_trades": 39238
+  },
+  {
+    "wallet": "0xeE00ba338C59557141789b127927a55f5cC5cEa1",
+    "username": "S-Works",
+    "primary_strategy": "model_based",
+    "secondary_strategies": [],
+    "difficulty": "medium",
+    "evidence_points": [
+      {"description": "7,071 algo positions with 64% winrate and 0.28 edge", "importance": 0.9, "category": "other"},
+      {"description": "Diverse market selection: college sports, esports (LoL), MLB, tennis", "importance": 0.8, "category": "market_selection"},
+      {"description": "Multiple positions in same markets (2 multi-position markets in sample)", "importance": 0.6, "category": "other"},
+      {"description": "Consistent sizing avg $163K with moderate std", "importance": 0.7, "category": "sizing"},
+      {"description": "Entry prices avg 0.464 - systematically finding value below 0.5", "importance": 0.6, "category": "other"}
+    ],
+    "notes": "Strong edge (0.28) and 64% winrate across 7K+ positions spanning diverse markets including niche ones (LoL esports). Broad market coverage suggests model-based approach rather than domain expertise. 8,894 total positions. Medium difficulty due to strong but ambiguous signals.",
+    "pnl_total": 1984306.46,
+    "volume_total": 154897636.0,
+    "win_rate_30d": 0.2857,
+    "total_trades": 8894
+  },
+  {
+    "wallet": "0x44c1DfE43260C94Ed4F1D00dE2e1f80Fb113Ebc1",
+    "username": "aenews2",
+    "primary_strategy": "info_edge",
+    "secondary_strategies": ["whale"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "Markets include breaking news events: 'Was Milei hacked?', South Korea elections, temperature anomalies", "importance": 1.0, "category": "market_selection"},
+      {"description": "Username 'aenews2' literally references news", "importance": 0.7, "category": "other"},
+      {"description": "Extremely large max position $12.5M with avg $592K", "importance": 0.8, "category": "sizing"},
+      {"description": "Low entry prices avg 0.304 - buying early when odds are long", "importance": 0.9, "category": "timing"},
+      {"description": "High size variance (std $1.7M) - variable conviction sizing", "importance": 0.6, "category": "sizing"}
+    ],
+    "notes": "Clear info_edge trader. Username references news. Markets are dominated by breaking news and current events (Milei hack, elections, temperature data, movie box office). Low avg entry price (0.304) means they're getting in early before markets move. Very large position sizes up to $12.5M. Easy to classify.",
+    "pnl_total": 1945956.52,
+    "volume_total": 185397194.35,
+    "win_rate_30d": 0.1429,
+    "total_trades": 3294
+  },
+  {
+    "wallet": "0xf705fa045201391D9632b7f3cde06a5e24453Ca7",
+    "username": "0xf705...",
+    "primary_strategy": "contrarian",
+    "secondary_strategies": ["model_based"],
+    "difficulty": "hard",
+    "evidence_points": [
+      {"description": "Exclusively trades crypto price prediction markets (Solana, XRP, Bitcoin, Ethereum dips/targets)", "importance": 0.9, "category": "market_selection"},
+      {"description": "Entry prices exactly at 0.50 - buying when market is split 50/50", "importance": 0.8, "category": "timing"},
+      {"description": "Moderate position count (1,495) with variable sizing", "importance": 0.5, "category": "sizing"},
+      {"description": "53% winrate with 0.06 edge - slight but consistent edge in crypto directional bets", "importance": 0.7, "category": "other"},
+      {"description": "Trades 'dip to' and 'above' markets - both directions, possibly contrarian on consensus crypto sentiment", "importance": 0.8, "category": "market_selection"}
+    ],
+    "notes": "Crypto-specialist trader focused exclusively on price prediction markets for BTC, ETH, SOL, XRP. Entry prices at 0.50 suggest buying when consensus is uncertain. Trading both 'dip' and 'above' markets. Hard to classify definitively - could be contrarian (betting against crypto consensus) or model-based (quantitative price models). Classified as contrarian given focus on 'dip' markets.",
+    "pnl_total": 1883323.98,
+    "volume_total": 51471249.5,
+    "win_rate_30d": 0.7143,
+    "total_trades": 1495
+  },
+  {
+    "wallet": "0x0b9CAe2B0dfe7a71c413E0604EaAC1C352f87e44",
+    "username": "MCgenius",
+    "primary_strategy": "whale",
+    "secondary_strategies": ["info_edge"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "Huge position variance: avg $477K, max $2.5M, min $5K, std $703K", "importance": 0.9, "category": "sizing"},
+      {"description": "Only 536 positions - very selective, low frequency", "importance": 0.8, "category": "sizing"},
+      {"description": "High winrate 70% with 0.39 edge - strong conviction that pays off", "importance": 0.8, "category": "other"},
+      {"description": "Mix of NFL (Patriots, spreads) and soccer (Hoffenheim) - diverse but selective", "importance": 0.5, "category": "market_selection"},
+      {"description": "Some very small positions ($5K) alongside huge ones ($2.5M) - testing vs conviction", "importance": 0.7, "category": "sizing"}
+    ],
+    "notes": "Classic whale with only 536 positions but massive sizing variance ($5K to $2.5M). 70% winrate and 0.39 edge suggest genuine skill. Very selective market participation. The extreme size range (min $5K to max $2.5M) suggests exploratory small bets that scale up on high-conviction opportunities.",
+    "pnl_total": 1769035.22,
+    "volume_total": 56555676.92,
+    "win_rate_30d": 0.1429,
+    "total_trades": 536
+  },
+  {
+    "wallet": "0x96489Abcb9f583D6835c8eF95FFc923D05A86825",
+    "username": "anoin123",
+    "primary_strategy": "info_edge",
+    "secondary_strategies": ["contrarian"],
+    "difficulty": "medium",
+    "evidence_points": [
+      {"description": "Only 149 positions - extremely selective, high conviction", "importance": 0.8, "category": "sizing"},
+      {"description": "83% winrate with 0.66 edge - best edge in dataset, exceptional accuracy", "importance": 1.0, "category": "other"},
+      {"description": "Markets include geopolitical events: US strikes Somalia/Iran, South Korea elections, company market cap", "importance": 0.9, "category": "market_selection"},
+      {"description": "Multiple positions in same geopolitical event series (US strikes Iran with different dates)", "importance": 0.7, "category": "market_selection"},
+      {"description": "High entry prices avg 0.721 - buying favorites that resolve correctly", "importance": 0.6, "category": "timing"}
+    ],
+    "notes": "Exceptional accuracy (83% winrate, 0.66 edge) with only 149 highly selective positions in geopolitical and macro markets (US military strikes, elections, company valuations). The focus on geopolitical events with serial dated markets (US strikes Iran by Jan 13, Jan 23, Feb 11) suggests genuine information edge. Strong Sharpe (1.08). Medium difficulty because high accuracy could also be model-based.",
+    "pnl_total": 1584874.93,
+    "volume_total": 20765869.33,
+    "win_rate_30d": 0.7143,
+    "total_trades": 149
+  },
+  {
+    "wallet": "0xee613B3FC183ee44F9Da9c05F53e2Da107E3DeBf",
+    "username": "sovereign2013",
+    "primary_strategy": "market_maker",
+    "secondary_strategies": ["model_based"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "45,822 total positions with 26,752 algo-tracked - extremely high frequency", "importance": 0.9, "category": "other"},
+      {"description": "Very tight position sizing: avg $98K, std only $35K", "importance": 0.9, "category": "sizing"},
+      {"description": "Near-50% winrate (51%) with razor-thin edge (0.03)", "importance": 1.0, "category": "other"},
+      {"description": "Massive volume $236M - making money on flow, not edge", "importance": 0.8, "category": "sizing"},
+      {"description": "Negative Sharpe (-0.74) despite profit - high variance thin-margin trading", "importance": 0.6, "category": "other"}
+    ],
+    "notes": "Textbook market maker: 45K+ positions, 51% winrate, 0.03 edge, $236M volume, tight consistent sizing ($98K avg). Makes $1.6M purely on volume with negligible per-trade edge. Trades NBA/college spreads and O/U markets. Easy to classify due to classic MM fingerprint.",
+    "pnl_total": 1559820.32,
+    "volume_total": 235621279.05,
+    "win_rate_30d": 0.2857,
+    "total_trades": 45822
+  },
+  {
+    "wallet": "0xa6A856A8c8A7f14fD9BE6Ae11C367c7Cbb755009",
+    "username": "lhtsports",
+    "primary_strategy": "scalper",
+    "secondary_strategies": ["model_based"],
+    "difficulty": "hard",
+    "evidence_points": [
+      {"description": "16,272 positions with very small avg size $55K and tight std $15K", "importance": 0.9, "category": "sizing"},
+      {"description": "Username 'lhtsports' suggests sports specialization", "importance": 0.4, "category": "other"},
+      {"description": "55% winrate with 0.09 edge - modest but consistent", "importance": 0.7, "category": "other"},
+      {"description": "Multiple positions in same markets (3 multi-position in sample) - re-entering/scaling", "importance": 0.7, "category": "other"},
+      {"description": "Low entry prices avg 0.398 - buying underdog/value positions frequently", "importance": 0.6, "category": "timing"}
+    ],
+    "notes": "High-frequency small-position trader: 16K+ positions at only $55K average. Very tight sizing control (std $15K). Could be scalper (many small quick trades) or model-based with small bet sizing. Trades across NBA, college, MLB. Hard to distinguish from model_based given the consistent sizing and moderate edge. Labeled scalper due to very small relative position sizes and high frequency.",
+    "pnl_total": 1460993.08,
+    "volume_total": 87277793.67,
+    "win_rate_30d": 0.4286,
+    "total_trades": 16272
+  },
+  {
+    "wallet": "0x63CE342161250D705dC0b16dF89036C8E5F9Ba9a",
+    "username": "0x8dxd",
+    "primary_strategy": "scalper",
+    "secondary_strategies": ["arbitrage"],
+    "difficulty": "easy",
+    "evidence_points": [
+      {"description": "33,277 positions - very high trade frequency", "importance": 0.8, "category": "other"},
+      {"description": "Very small position sizes: avg $31K, max $71K", "importance": 0.9, "category": "sizing"},
+      {"description": "Exclusively trades 'Bitcoin Up or Down' short-timeframe markets (15min to hourly windows)", "importance": 1.0, "category": "market_selection"},
+      {"description": "50% winrate with 0% edge but positive Sharpe (1.16) - making money on execution/timing", "importance": 0.8, "category": "other"},
+      {"description": "16,979 algo-tracked positions", "importance": 0.5, "category": "other"}
+    ],
+    "notes": "Pure scalper exclusively trading Bitcoin Up/Down short-timeframe markets (15-minute and hourly windows). 33K+ tiny positions ($31K avg). 50% winrate with zero measured edge but strong positive Sharpe (1.16) - makes money on execution timing and bid-ask capture. Possible arbitrage with external crypto markets. Easy to classify due to obvious short-timeframe pattern.",
+    "pnl_total": 1448598.53,
+    "volume_total": 121530086.26,
+    "win_rate_30d": 1.0,
+    "total_trades": 33277
+  },
+  {
+    "wallet": "0xEd107a85a4585A381E48C7F7Ca4144909e7Dd2E5",
+    "username": "bobe2",
+    "primary_strategy": "info_edge",
+    "secondary_strategies": ["whale"],
+    "difficulty": "hard",
+    "evidence_points": [
+      {"description": "Very high avg entry price 0.946 - buying strong favorites near resolution", "importance": 0.9, "category": "timing"},
+      {"description": "89% winrate with 0.78 edge - exceptional accuracy", "importance": 0.9, "category": "other"},
+      {"description": "Enormous positions: avg $1.26M, max $7.57M", "importance": 0.8, "category": "sizing"},
+      {"description": "Markets are major political/economic events: Trump Bitcoin reserve, Fed rate decisions, Canadian PM, Epstein files", "importance": 0.9, "category": "market_selection"},
+      {"description": "Negative Sharpe (-0.21) despite 89% winrate - occasional large losses on the 11%", "importance": 0.5, "category": "other"}
+    ],
+    "notes": "Trades major political/economic events with massive positions ($1.26M avg, up to $7.57M). Very high entry prices (0.946) mean buying near-certain outcomes for small returns - but at huge scale. 89% winrate. Hard to classify: could be info_edge (genuine political information advantage) or sophisticated whale arbitraging price inefficiencies near resolution. The focus on political/macro events and timing near resolution suggests info_edge. Hard difficulty due to ambiguity with late-stage whale accumulation.",
+    "pnl_total": 1336087.57,
+    "volume_total": 122926668.4,
+    "win_rate_30d": 0.2857,
+    "total_trades": 1124
+  }
+]

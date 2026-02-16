@@ -12,6 +12,7 @@ import json
 import os
 from dotenv import load_dotenv
 import httpx
+from openai import AsyncOpenAI
 
 from .models import WalletThesis, StrategyType
 from .scorer import JudgeAssessment
@@ -19,9 +20,11 @@ from .run_eval import evaluate_analyzer
 
 load_dotenv()
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "zhipu/glm-5"  # Cheap, test the flow
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+DEFAULT_MODEL = "gpt-4o-mini"  # Cheap baseline
+JUDGE_MODEL = "gpt-4o"  # Better judge
+
+_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 
 BASELINE_PROMPT = """You are analyzing a Polymarket trading wallet.
@@ -46,27 +49,18 @@ Respond in JSON matching this schema:
 }"""
 
 
-async def call_openrouter(
+async def call_llm(
     messages: list[dict],
     model: str = DEFAULT_MODEL,
-    response_format: dict | None = None,
 ) -> str:
-    """Call OpenRouter API."""
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": model,
-        "messages": messages,
-    }
-    if response_format:
-        payload["response_format"] = response_format
-    
-    async with httpx.AsyncClient(timeout=120) as client:
-        resp = await client.post(OPENROUTER_URL, headers=headers, json=payload)
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+    """Call OpenAI API."""
+    resp = await _client.chat.completions.create(
+        model=model,
+        messages=messages,
+        response_format={"type": "json_object"},
+        timeout=120,
+    )
+    return resp.choices[0].message.content
 
 
 async def fetch_wallet_data_raw(wallet: str) -> str:
@@ -119,36 +113,36 @@ async def baseline_analyze(wallet: str) -> WalletThesis:
         {"role": "user", "content": f"Analyze this wallet:\n\n{wallet_data}"},
     ]
     
-    raw = await call_openrouter(messages)
-    
-    # Parse JSON from response (handle markdown code blocks)
-    raw = raw.strip()
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
-    
+    raw = await call_llm(messages)
     data = json.loads(raw)
     return WalletThesis(**data)
 
 
 async def baseline_judge(prompt: str) -> JudgeAssessment:
     """Use LLM as judge to score a thesis against ground truth."""
+    schema_hint = json.dumps({
+        "strategy_correct": True,
+        "strategy_partial": False,
+        "evidence_matches": ["list of matched evidence descriptions"],
+        "evidence_missed": ["list of missed evidence descriptions"],
+        "false_claims": ["list of false claims"],
+        "specificity_score": 0.5,
+        "confidence_appropriate": 0.7,
+        "reasoning": "your reasoning here"
+    }, indent=2)
     messages = [
-        {"role": "system", "content": "You are an expert evaluator. Respond in valid JSON matching the schema described."},
+        {"role": "system", "content": f"You are an expert evaluator. Respond in valid JSON with EXACTLY these snake_case field names:\n{schema_hint}"},
         {"role": "user", "content": prompt},
     ]
     
-    raw = await call_openrouter(messages, model="anthropic/claude-sonnet-4")  # Better judge
-    raw = raw.strip()
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
-    
+    raw = await call_llm(messages, model=JUDGE_MODEL)
     return JudgeAssessment(**json.loads(raw))
 
 
 async def main():
     print("🏁 Running baseline evaluation (no skills, raw LLM)")
     print(f"   Model: {DEFAULT_MODEL}")
-    print(f"   Judge: anthropic/claude-sonnet-4")
+    print(f"   Judge: {JUDGE_MODEL}")
     print()
     
     report = await evaluate_analyzer(
