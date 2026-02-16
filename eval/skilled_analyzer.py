@@ -129,9 +129,14 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     # Category analysis
     cat_counts = getattr(markets, 'category_counts', {})
     top_cats = list(cat_counts.keys())[:5] if cat_counts else []
+    cat_values = list(cat_counts.values())[:5] if cat_counts else []
+    total_cat = sum(cat_values) if cat_values else 1
     politics_focus = any('politic' in str(c).lower() or 'news' in str(c).lower() or 'election' in str(c).lower() for c in top_cats)
     has_non_sports = any(c in top_cats for c in ['politics', 'entertainment', 'crypto', 'economics', 'science_tech', 'weather'])
-    sports_dominant = not has_non_sports or all('sport' in str(c).lower() or c == 'other' for c in top_cats[:3])
+    # Sports-dominant = sports is the #1 category with >40% of positions
+    sports_is_top = len(top_cats) > 0 and 'sport' in str(top_cats[0]).lower()
+    sports_pct = (cat_values[0] / total_cat) if sports_is_top and total_cat > 0 else 0
+    sports_dominant = sports_is_top and sports_pct > 0.40
     
     # === SPORTS WHALE detection (HIGHEST PRIORITY for large sports bettors) ===
     # Sports + large positions = whale, REGARDLESS of win rate
@@ -164,17 +169,36 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     if sizing.max_position_size > 500_000 and not has_strong_edge:
         hints.append(f"⚠️ MEGA POSITION: max position ${sizing.max_position_size:,.0f} without strong edge — classic whale.")
     
-    # === MODEL_BASED detection: high count + consistent edge + NOT market maker ===
-    # Key: model_based needs high trade count AND consistent edge; don't confuse with whale or MM
-    if num_positions > 2000 and has_moderate_edge and cv < 1.5:
-        # Distinguish from market_maker: model_based has stronger edge (>0.05)
+    # === MODEL_BASED detection: consistent edge, especially in sports ===
+    # Sports traders with consistent edge are using quantitative models, NOT info_edge
+    # (info_edge requires politics/news/crypto where early information matters)
+    if num_positions > 2000 and has_moderate_edge:
         edge = win_rate - 0.5
         if edge > 0.05 or profit_factor > 1.3:
+            if sports_dominant:
+                hints.append(
+                    f"⚠️ SPORTS MODEL_BASED SIGNAL: {num_positions} positions, sports-dominant, "
+                    f"win rate {win_rate:.0%}, PF {profit_factor:.1f}. Sports + consistent statistical edge "
+                    f"= quantitative sports model. NOT info_edge (sports don't have insider info), "
+                    f"NOT scalper (edge too strong/consistent), NOT market_maker (directional edge)."
+                )
+            elif cv < 1.5:
+                hints.append(
+                    f"⚠️ MODEL_BASED SIGNAL: {num_positions} positions with consistent edge "
+                    f"(win rate {win_rate:.0%}, PF {profit_factor:.1f}), low CV ({cv:.2f}). "
+                    f"High trade count with statistical edge = systematic quantitative trading. "
+                    f"NOT whale (too many positions), NOT market_maker (edge too strong)."
+                )
+    
+    # Sports + moderate edge + high count but doesn't meet the above threshold
+    if sports_dominant and num_positions > 500 and win_rate > 0.55 and profit_factor > 1.1:
+        if not any('SPORTS MODEL_BASED' in h for h in hints):
             hints.append(
-                f"⚠️ MODEL_BASED SIGNAL: {num_positions} positions with consistent edge "
-                f"(win rate {win_rate:.0%}, PF {profit_factor:.1f}), low CV ({cv:.2f}). "
-                f"High trade count with statistical edge = systematic quantitative trading. "
-                f"NOT whale (too many positions), NOT market_maker (edge too strong)."
+                f"⚠️ POSSIBLE SPORTS MODEL: sports-dominant with {num_positions} positions, "
+                f"WR {win_rate:.0%}, PF {profit_factor:.1f}. Consistent edge in sports suggests "
+                f"quantitative modeling (statistical/EV models). Consider model_based. "
+                f"High CV ({cv:.2f}) may be caused by occasional large positions but does NOT "
+                f"disqualify model_based — sports quant traders sometimes size up on high-confidence bets."
             )
     
     # === MARKET MAKER detection: VERY specific — near-50% WR + thin edge + huge volume ===
@@ -313,8 +337,12 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
     # Category analysis
     cat_counts = getattr(markets, 'category_counts', {})
     top_cats = list(cat_counts.keys())[:5] if cat_counts else []
+    cat_values = list(cat_counts.values())[:5] if cat_counts else []
+    total_cat = sum(cat_values) if cat_values else 1
     has_non_sports = any(c in top_cats for c in ['politics', 'entertainment', 'crypto', 'economics', 'science_tech', 'weather'])
-    sports_dominant = not has_non_sports
+    sports_is_top = len(top_cats) > 0 and 'sport' in str(top_cats[0]).lower()
+    sports_pct = (cat_values[0] / total_cat) if sports_is_top and total_cat > 0 else 0
+    sports_dominant = sports_is_top and sports_pct > 0.40
     has_politics_news = any(c in str(top_cats).lower() for c in ['politic', 'news', 'election', 'crypto'])
     
     def _do_override(new_strategy: str, reason: str):
@@ -340,12 +368,14 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"win rate {win_rate:.0%}, Sharpe {sharpe} — large bets without edge, not politics/news")
     
     # === INFO_EDGE RESCUE ===
-    # If classified as whale but trades politics/news/crypto with strong edge → info_edge
+    # If classified as whale but trades politics/news/crypto with EXCEPTIONAL edge → info_edge
+    # Tightened: requires very high WR (>75%) or very high PF (>3.0) to distinguish from model_based
+    # Model_based traders can also trade politics with moderate edge (60-70% WR, PF 1-2)
     if predicted == "whale" and has_politics_news and not sports_dominant:
-        if win_rate > 0.60 or profit_factor > 1.5:
+        if win_rate > 0.75 or profit_factor > 3.0:
             _do_override("info_edge",
                 f"OVERRIDE whale→info_edge: win rate {win_rate:.0%}, PF {profit_factor:.1f}, "
-                f"trades politics/news/crypto markets — information advantage, not just large bets")
+                f"trades politics/news/crypto markets — exceptional accuracy suggests information advantage")
     
     # === MODEL_BASED RESCUE ===
     # If classified as whale but has high trade count + consistent edge → model_based
@@ -354,6 +384,18 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
             _do_override("model_based",
                 f"OVERRIDE whale→model_based: {num_positions} positions, CV {cv:.2f}, "
                 f"win rate {win_rate:.0%}, PF {profit_factor:.1f} — too consistent for whale")
+    
+    # === MODEL_BASED RESCUE (sports-specific, relaxed CV) ===
+    # Sports model traders can have high CV from occasional large bets while core behavior
+    # is systematic. Key signals: high position count + consistent win rate + sports focus.
+    # CV is less informative for sports models because occasional big bets inflate it.
+    if predicted == "whale" and sports_dominant and num_positions > 2000:
+        if win_rate > 0.58 and profit_factor > 1.05 and avg_pos < 50_000:
+            _do_override("model_based",
+                f"OVERRIDE whale→model_based: sports-dominant, {num_positions} positions, "
+                f"WR {win_rate:.0%}, PF {profit_factor:.1f}, avg ${avg_pos:,.0f}. "
+                f"High position count + consistent edge in sports = quantitative model. "
+                f"CV {cv:.2f} inflated by outlier positions, not indicative of whale behavior.")
     
     # === ANTI-WHALE: Small avg position + high count = NOT whale ===
     # Whales have large positions. If avg < $10K and many positions, it's model_based/scalper/MM
@@ -382,6 +424,51 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
             _do_override("model_based",
                 f"OVERRIDE whale→model_based: {num_positions} positions (>10K) with avg ${avg_pos:,.0f} (<$50K), "
                 f"win rate {win_rate:.0%}, CV {cv:.2f} — high-frequency systematic trading, not whale")
+    
+    # === INFO_EDGE → MODEL_BASED for high position count or moderate edge ===
+    # True info_edge traders have EXCEPTIONAL accuracy (WR >75% or PF >3.0) on few bets
+    # Model_based traders have MODERATE but consistent edge across many positions
+    if predicted == "info_edge" and not sports_dominant:
+        is_exceptional = win_rate > 0.75 or profit_factor > 3.0
+        if not is_exceptional and num_positions > 500:
+            _do_override("model_based",
+                f"OVERRIDE info_edge→model_based: {num_positions} positions with WR {win_rate:.0%}, "
+                f"PF {profit_factor:.1f}. True info_edge has exceptional accuracy (WR>75% or PF>3.0). "
+                f"This is moderate consistent edge across many positions = systematic/quantitative.")
+    
+    # === INFO_EDGE → MODEL_BASED for sports-dominant ===
+    # Info_edge requires politics/news/crypto markets. Sports with consistent edge = model_based.
+    if predicted == "info_edge" and sports_dominant:
+        if win_rate > 0.55 and profit_factor > 1.1:
+            _do_override("model_based",
+                f"OVERRIDE info_edge→model_based: sports-dominant markets with WR {win_rate:.0%}, "
+                f"PF {profit_factor:.1f}. Info_edge requires politics/news/crypto where early "
+                f"information matters. Sports edge comes from quantitative models, not insider info.")
+    
+    # === SCALPER → MODEL_BASED for sports with strong edge ===
+    if predicted == "scalper" and sports_dominant and win_rate > 0.58:
+        _do_override("model_based",
+            f"OVERRIDE scalper→model_based: sports-dominant, WR {win_rate:.0%} (>58%), "
+            f"PF {profit_factor:.1f}. Strong consistent edge in sports = quantitative model, "
+            f"not just high-frequency scalping.")
+    
+    # === MARKET_MAKER → MODEL_BASED for sports with real edge ===
+    if predicted == "market_maker" and sports_dominant:
+        edge = win_rate - 0.5
+        if edge > 0.03 and profit_factor > 1.05:
+            _do_override("model_based",
+                f"OVERRIDE market_maker→model_based: sports-dominant, WR {win_rate:.0%} "
+                f"(edge {edge:.1%}), PF {profit_factor:.1f}. Market makers have near-zero edge; "
+                f"this trader has directional edge from sports modeling.")
+    
+    # === MARKET_MAKER → MODEL_BASED rescue for wallets with real directional edge ===
+    # Market makers have near-zero edge (WR ~50%, PF ~1.0). If classified as market_maker
+    # but has meaningful directional edge, it's model_based (systematic quant trading at scale)
+    if predicted == "market_maker" and win_rate > 0.53 and profit_factor > 1.05:
+        _do_override("model_based",
+            f"OVERRIDE market_maker→model_based: WR {win_rate:.0%}, PF {profit_factor:.1f}. "
+            f"Market makers have near-zero directional edge (WR ~50%). This trader has "
+            f"meaningful edge = systematic quantitative trading at high volume.")
     
     # === MARKET MAKER OVERRIDE (very tight) ===
     # Only override when: massive count + near-exactly-50% WR + very thin edge

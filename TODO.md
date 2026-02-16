@@ -72,7 +72,7 @@
 
 ## Phase 3: Improve Skilled Analyzer
 - [x] Fix whale over-classification (anti-whale overrides for small avg + high count)
-- [ ] Fix model_based under-detection (RN1, S-Works still misclassified)
+- [x] Fix model_based under-detection (RN1, S-Works now correctly classified)
 - [ ] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
 - [ ] Fix info_edge detection (high win rate on politics/events + sporadic timing)
 - [ ] Reduce model_based over-classification bias
@@ -94,4 +94,13 @@
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
 - **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
-- **Best agent score:** 0.516 (skilled v2, anti-whale overrides)
+- **Best agent score:** 0.575 (skilled v3, model_based detection fixes)
+
+### Skilled v3 Results (2026-02-16) — model_based under-detection fix
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.575 (+11% vs v2, +134% vs baseline)
+- **Strategy accuracy:** 66.7% (10/15 correct)
+- **Evidence recall:** 42.7%
+- **Total time:** 201s (~13s/wallet)
+- **Fixed:** S-Works whale→model_based ✅, RN1 already correct ✅
+- **Still failing:** SwissMiss (model_based→whale), GamblingIsAllYouNeed (model_based→scalper), aenews2 (info_edge→whale), 0xf705 (contrarian→model_based), 0x8dxd (scalper→market_maker)
