@@ -52,6 +52,15 @@
 - [ ] **Correlation Analyzer** — cross-market hedging, paired positions, portfolio construction
 - [ ] **Speed Analyzer** — time from market creation to first trade (info edge signal)
 
+### Skilled v5 Results (2026-02-16) — info_edge + contrarian fixes
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.690 (+9% vs v4, +180% vs baseline)
+- **Strategy accuracy:** 93.3% (14/15 correct)
+- **Evidence recall:** 61.3%
+- **Total time:** 275s (~18s/wallet)
+- **Fixed:** aenews2 (now info_edge ✅), 0xf705 (now contrarian ✅)
+- **Still failing:** SwissMiss (model_based→whale) — only remaining misclassification
+
 ### Skilled v1 Results (2026-02-16)
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
 - **Composite score:** 0.479 (+94% vs baseline 0.246)
@@ -74,7 +83,8 @@
 - [x] Fix whale over-classification (anti-whale overrides for small avg + high count)
 - [x] Fix model_based under-detection (RN1, S-Works now correctly classified)
 - [x] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
-- [ ] Fix info_edge detection (high win rate on politics/events + sporadic timing)
+- [x] Fix info_edge detection (high win rate on politics/events + sporadic timing) ✅ (all 3 now correct)
+- [x] Fix contrarian detection (0xf705 now correct)
 - [ ] Reduce model_based over-classification bias
 - [ ] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact
 - [ ] Build agent that uses skills from Phase 2
@@ -94,7 +104,7 @@
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
 - **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
-- **Best agent score:** 0.631 (skilled v4, market_maker detection fix)
+- **Best agent score:** 0.690 (skilled v5, info_edge + contrarian fixes, 93.3% strategy accuracy)
 
 ### Skilled v3 Results (2026-02-16) — model_based under-detection fix
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
