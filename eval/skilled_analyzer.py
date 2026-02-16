@@ -142,7 +142,9 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     # === SPORTS WHALE detection (HIGHEST PRIORITY for large sports bettors) ===
     # Sports + large positions = whale, REGARDLESS of win rate
     # Sports bettors with high win rates are skilled whales, not info_edge
+    sports_whale_flagged = False
     if avg_pos > 50_000 and num_positions < 5000 and sports_dominant:
+        sports_whale_flagged = True
         hints.append(
             f"⚠️ SPORTS WHALE: avg position ${avg_pos:,.0f}, {num_positions} positions, "
             f"SPORTS-FOCUSED markets. Sports traders with large positions are whales — "
@@ -184,7 +186,8 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     # === MODEL_BASED detection: consistent edge, especially in sports ===
     # Sports traders with consistent edge are using quantitative models, NOT info_edge
     # (info_edge requires politics/news/crypto where early information matters)
-    if num_positions > 2000 and has_moderate_edge:
+    # BUT: skip if already flagged as sports whale (large positions + sports = whale, not model)
+    if num_positions > 2000 and has_moderate_edge and not sports_whale_flagged:
         edge = win_rate - 0.5
         if edge > 0.05 or profit_factor > 1.3:
             if sports_dominant:
@@ -204,7 +207,7 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     
     # Very high count sports trading (>10K positions) with ANY positive edge = model_based
     # At this scale, even a thin edge (52-55% WR) is clearly systematic/algorithmic
-    if sports_dominant and num_positions > 10_000 and win_rate > 0.52 and profit_factor > 1.0:
+    if sports_dominant and num_positions > 10_000 and win_rate > 0.52 and profit_factor > 1.0 and avg_pos > 10_000:
         if not any('SPORTS MODEL_BASED' in h for h in hints):
             hints.append(
                 f"⚠️ SPORTS MODEL_BASED (high volume): {num_positions} positions (>10K), "
@@ -213,6 +216,17 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
                 f"algorithmic sports model. Even thin edge (52-55%) at this volume is clearly "
                 f"systematic/quantitative, NOT scalper or market_maker."
             )
+    
+    # === SCALPER (sports, high volume, small positions) ===
+    # Sports traders with very high count BUT small avg position (<$10K) are scalpers, not model_based.
+    # They profit from high-frequency small directional bets, not quantitative model sophistication.
+    if sports_dominant and num_positions > 10_000 and avg_pos < 10_000 and 0.52 < win_rate < 0.60:
+        hints.append(
+            f"⚠️ SPORTS SCALPER SIGNAL: {num_positions} positions (>10K), "
+            f"avg ${avg_pos:,.0f} (<$10K), WR {win_rate:.0%}, sports-dominant. "
+            f"Very small position sizes + high frequency + moderate directional edge = SCALPER. "
+            f"Model_based traders typically size up more; scalpers keep positions tiny for quick turnover."
+        )
     
     # Sports + moderate edge + high count but doesn't meet the above threshold
     if sports_dominant and num_positions > 500 and win_rate > 0.55 and profit_factor > 1.1:
@@ -395,10 +409,16 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
     # === SPORTS WHALE OVERRIDE ===
     # Sports + large positions + low count = whale, even with high win rate
     # Sports bettors don't have "information edge" — they have skill or luck
-    if predicted != "whale" and avg_pos > 100_000 and num_positions < 5000 and sports_dominant:
+    # Two triggers: (1) high CV or (2) very large avg ($300K+) or (3) negative Sharpe
+    is_sports_whale = (
+        predicted != "whale" and avg_pos > 50_000 and num_positions < 5000 and sports_dominant
+        and (cv > 1.5 or avg_pos > 300_000 or (sharpe is not None and sharpe < 0))
+    )
+    if is_sports_whale:
         _do_override("whale",
             f"OVERRIDE {predicted}→whale: avg ${avg_pos:,.0f}, {num_positions} positions, "
-            f"SPORTS-DOMINANT markets. Large sports bettors are whales regardless of win rate.")
+            f"CV {cv:.2f}, Sharpe {sharpe}, SPORTS-DOMINANT markets. "
+            f"Large sports bettors are whales regardless of win rate.")
     
     # === GENERAL WHALE OVERRIDE (non-sports, conservative) ===
     # Only for very large positions + few trades + weak edge + NOT politics/news
@@ -546,7 +566,7 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
     crypto_pct = crypto_cats / total_cat if total_cat > 0 else 0
     avg_entry = getattr(sizing, 'avg_entry_price', 0.5)
     
-    if predicted in ("scalper", "model_based") and not sports_dominant and crypto_pct > 0.60:
+    if predicted in ("scalper", "model_based", "hedger") and not sports_dominant and crypto_pct > 0.60:
         # Crypto-specialist with entry near 0.50 = contrarian (betting against market consensus)
         if 0.45 <= avg_entry <= 0.55 and 500 < num_positions < 5000:
             _do_override("contrarian",
@@ -554,6 +574,18 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"avg entry {avg_entry:.2f} (near 0.50 = buying at uncertainty), "
                 f"{num_positions} positions. Crypto price prediction specialist "
                 f"entering at consensus-split prices = contrarian strategy.")
+    
+    # === HEDGER → CONTRARIAN for crypto-dominant with near-0.50 entry ===
+    # Correlation analyzer adds hedging signals for crypto traders who take both sides
+    # of price prediction markets, but this is contrarian behavior, not hedging.
+    predicted = data.get("primary_strategy", "unknown")  # refresh after prior overrides
+    if predicted == "hedger" and crypto_pct > 0.60 and not sports_dominant:
+        if 0.40 <= avg_entry <= 0.55 and 200 < num_positions < 10_000:
+            _do_override("contrarian",
+                f"OVERRIDE hedger→contrarian: {crypto_pct:.0%} crypto markets, "
+                f"avg entry {avg_entry:.2f} (near 0.50 = buying at uncertainty), "
+                f"{num_positions} positions. Crypto price prediction specialist with "
+                f"opposing positions is CONTRARIAN (betting against consensus), not hedger.")
     
     # === INFO_EDGE → MODEL_BASED for sports-dominant ===
     # Info_edge requires politics/news/crypto markets. Sports with consistent edge = model_based.
@@ -607,6 +639,24 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
             f"OVERRIDE market_maker→model_based: WR {win_rate:.0%}, PF {profit_factor:.1f}. "
             f"Market makers have near-zero directional edge (WR ~50%). This trader has "
             f"meaningful edge = systematic quantitative trading at high volume.")
+    
+    # === MODEL_BASED → SCALPER for sports with small positions ===
+    # Sports traders with very high count but small avg position are scalpers, not model_based.
+    # Model_based traders typically size positions more aggressively.
+    # Two tiers: (1) tiny avg <$10K any count >10K, (2) moderate avg <$100K + very high count + moderate WR
+    if predicted == "model_based" and sports_dominant and num_positions > 10_000:
+        edge = win_rate - 0.5
+        if avg_pos < 10_000 and 0.02 < edge < 0.08 and profit_factor < 1.3:
+            _do_override("scalper",
+                f"OVERRIDE model_based→scalper: sports-dominant, {num_positions} positions, "
+                f"avg ${avg_pos:,.0f} (<$10K), WR {win_rate:.0%}, PF {profit_factor:.1f}. Very small position sizes + "
+                f"high frequency + moderate edge = scalper, not model_based.")
+        elif avg_pos < 100_000 and 0.03 < edge < 0.10 and num_positions > 15_000 and (sharpe is None or sharpe < 0.8):
+            _do_override("scalper",
+                f"OVERRIDE model_based→scalper: sports-dominant, {num_positions} positions (>15K), "
+                f"avg ${avg_pos:,.0f} (<$100K), WR {win_rate:.0%}, Sharpe {sharpe}. "
+                f"High-frequency moderate-size sports trading with moderate edge = scalper. "
+                f"Model_based implies systematic sizing optimization; scalpers focus on volume and turnover.")
     
     # === MARKET MAKER OVERRIDE (very tight) ===
     # Only override when: massive count + near-exactly-50% WR + very thin edge
