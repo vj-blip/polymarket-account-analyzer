@@ -43,15 +43,30 @@
 - High false claim rate (avg 2.6 on failures) — model hallucinates patterns
 
 ## Phase 2: Analysis Skills/Tools
-- [ ] **Timing Analyzer** — detect time-of-day patterns, event-driven entries, speed-to-market
-- [ ] **Sizing Analyzer** — position sizing consistency, Kelly-like patterns, scaling behavior
-- [ ] **Market Selection Analyzer** — category focus, market diversity, correlation patterns
+- [x] **Timing Analyzer** — time-of-day patterns, burst trading, consistency, off-hours detection
+- [x] **Sizing Analyzer** — position sizing consistency, CV, scaling behavior, entry price distribution
+- [x] **Market Analyzer** — category focus, market diversity, HHI concentration, outcome bias
+- [x] **Flow Analyzer** — win rate, profit factor, accumulation, risk/reward, monthly trends
+- [x] **Pattern Analyzer** — win/loss streaks, drawdown analysis, R² curve, post-loss behavior
+- [x] **Skilled Analyzer** — combines all 5 skills → structured LLM prompt → WalletThesis
 - [ ] **Correlation Analyzer** — cross-market hedging, paired positions, portfolio construction
-- [ ] **Flow Analyzer** — buy/sell ratio evolution, accumulation/distribution patterns
 - [ ] **Speed Analyzer** — time from market creation to first trade (info edge signal)
-- [ ] **Win Pattern Analyzer** — streak analysis, loss recovery, drawdown behavior
 
-## Phase 3: Agent with Tools
+### Skilled v1 Results (2026-02-16)
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.479 (+94% vs baseline 0.246)
+- **Strategy accuracy:** 26.7% (4/15 correct — up from 1/15)
+- **Evidence recall:** 40.0% (up from 6.7%)
+- **Total time:** 286s (~19s/wallet)
+- **Correct strategies:** RN1=model_based, GamblingIsAllYouNeed=model_based, S-Works=model_based, MCgenius=whale
+- **Key issues:** Still misclassifies whales as model_based, market_makers as model_based/scalper, info_edge as whale. Model defaults to model_based too often. Needs better whale/MM heuristics in prompt.
+
+## Phase 3: Improve Skilled Analyzer
+- [ ] Fix whale detection (avg position >$100K + low position count should strongly signal whale)
+- [ ] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
+- [ ] Fix info_edge detection (high win rate on politics/events + sporadic timing)
+- [ ] Reduce model_based over-classification bias
+- [ ] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact
 - [ ] Build agent that uses skills from Phase 2
 - [ ] Run eval, compare to baseline
 - [ ] Iterate on tool selection and prompting
@@ -68,4 +83,5 @@
 ## Current Status
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
-- **Best agent score:** N/A
+- **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
+- **Best agent score:** 0.479 (skilled v1)
