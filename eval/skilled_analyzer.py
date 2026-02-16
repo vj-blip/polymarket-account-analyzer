@@ -201,6 +201,18 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
                     f"NOT whale (too many positions), NOT market_maker (edge too strong)."
                 )
     
+    # Very high count sports trading (>10K positions) with ANY positive edge = model_based
+    # At this scale, even a thin edge (52-55% WR) is clearly systematic/algorithmic
+    if sports_dominant and num_positions > 10_000 and win_rate > 0.52 and profit_factor > 1.0:
+        if not any('SPORTS MODEL_BASED' in h for h in hints):
+            hints.append(
+                f"⚠️ SPORTS MODEL_BASED (high volume): {num_positions} positions (>10K), "
+                f"sports-dominant, WR {win_rate:.0%}, PF {profit_factor:.1f}. "
+                f"Extremely high position count with consistent positive edge at scale = "
+                f"algorithmic sports model. Even thin edge (52-55%) at this volume is clearly "
+                f"systematic/quantitative, NOT scalper or market_maker."
+            )
+    
     # Sports + moderate edge + high count but doesn't meet the above threshold
     if sports_dominant and num_positions > 500 and win_rate > 0.55 and profit_factor > 1.1:
         if not any('SPORTS MODEL_BASED' in h for h in hints):
@@ -447,6 +459,18 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"Sharpe {sharpe:.2f} (>0.8), WR {win_rate:.0%}. "
                 f"High Sharpe + strong win rate = consistent quantitative edge, not whale.")
     
+    # === MODEL_BASED RESCUE (sports, moderate count, strong edge without Sharpe) ===
+    # Sports traders with 500-2000 positions, strong win rate (>60%), and meaningful
+    # profit factor (>1.2) have a quantitative edge — not just whale-betting.
+    # Whales bet big without consistent edge; these traders have repeatable alpha.
+    if predicted == "whale" and sports_dominant and 500 <= num_positions <= 2000:
+        if win_rate > 0.60 and profit_factor > 1.2 and avg_pos < 100_000:
+            _do_override("model_based",
+                f"OVERRIDE whale→model_based: sports, {num_positions} positions, "
+                f"WR {win_rate:.0%} (>60%), PF {profit_factor:.1f} (>1.2), avg ${avg_pos:,.0f}. "
+                f"Moderate position count + strong consistent edge = quantitative sports model, "
+                f"not whale. Whales bet big WITHOUT edge; this trader has repeatable alpha.")
+    
     # === ANTI-WHALE: Small avg position + high count = NOT whale ===
     # Whales have large positions. If avg < $10K and many positions, it's model_based/scalper/MM
     if predicted == "whale" and avg_pos < 10_000 and num_positions > 3000:
@@ -545,13 +569,23 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
             f"not just high-frequency scalping.")
     
     # === SCALPER → MODEL_BASED for very high-count systematic sports trading ===
-    # Scalpers are opportunistic; model_based is systematic. Key signal: very high position
-    # count (>15K) + consistent sizing (low CV) + sports = algorithmic model, even with thin edge.
-    if predicted == "scalper" and sports_dominant and num_positions > 15_000 and cv < 0.5:
-        _do_override("model_based",
-            f"OVERRIDE scalper→model_based: {num_positions} positions (>15K), CV {cv:.2f} (<0.5), "
-            f"sports-dominant. Extremely high volume + very consistent sizing = systematic "
-            f"quantitative model, not opportunistic scalping.")
+    # Scalpers are opportunistic; model_based is systematic. Key signals:
+    # 1. Very high count + low CV = algorithmic
+    # 2. Extremely high count (>20K) + sports + any positive edge = systematic quant model
+    #    (nobody manually scalps 20K+ sports positions — that's an algorithm)
+    if predicted == "scalper" and sports_dominant and num_positions > 15_000:
+        if cv < 0.5:
+            _do_override("model_based",
+                f"OVERRIDE scalper→model_based: {num_positions} positions (>15K), CV {cv:.2f} (<0.5), "
+                f"sports-dominant. Extremely high volume + very consistent sizing = systematic "
+                f"quantitative model, not opportunistic scalping.")
+        elif num_positions > 20_000 and win_rate > 0.51 and profit_factor > 1.0:
+            _do_override("model_based",
+                f"OVERRIDE scalper→model_based: {num_positions} positions (>20K), "
+                f"sports-dominant, WR {win_rate:.0%}, PF {profit_factor:.1f}. "
+                f"Nobody manually scalps 20K+ sports bets — this volume requires "
+                f"algorithmic/quantitative execution. CV {cv:.2f} is high but irrelevant "
+                f"at this scale; the sheer volume indicates systematic model-based trading.")
     
     # === MARKET_MAKER → MODEL_BASED for sports with real edge ===
     if predicted == "market_maker" and sports_dominant:

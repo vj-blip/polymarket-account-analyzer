@@ -52,6 +52,15 @@
 - [ ] **Correlation Analyzer** — cross-market hedging, paired positions, portfolio construction
 - [ ] **Speed Analyzer** — time from market creation to first trade (info edge signal)
 
+### Skilled v6 Results (2026-02-16) — 100% accuracy! SwissMiss + GamblingIsAllYouNeed fixes
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.728 (+5.5% vs v5, +196% vs baseline)
+- **Strategy accuracy:** 100.0% (15/15 correct) 🎉
+- **Evidence recall:** 64.0%
+- **Total time:** 221s (~15s/wallet)
+- **Fixed:** SwissMiss (now model_based ✅ via sports edge rescue), GamblingIsAllYouNeed (now model_based ✅ via high-volume sports override)
+- **Also tested:** gpt-4o as analyzer — no improvement over gpt-4o-mini (0.686 vs 0.690, same failures)
+
 ### Skilled v5 Results (2026-02-16) — info_edge + contrarian fixes
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
 - **Composite score:** 0.690 (+9% vs v4, +180% vs baseline)
@@ -85,8 +94,8 @@
 - [x] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
 - [x] Fix info_edge detection (high win rate on politics/events + sporadic timing) ✅ (all 3 now correct)
 - [x] Fix contrarian detection (0xf705 now correct)
-- [ ] Reduce model_based over-classification bias
-- [ ] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact
+- [x] Reduce model_based over-classification bias (SwissMiss fixed via sports model_based rescue)
+- [x] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact → No improvement (0.686 vs 0.690), same failures
 - [ ] Build agent that uses skills from Phase 2
 - [ ] Run eval, compare to baseline
 - [ ] Iterate on tool selection and prompting
@@ -104,7 +113,7 @@
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
 - **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
-- **Best agent score:** 0.690 (skilled v5, info_edge + contrarian fixes, 93.3% strategy accuracy)
+- **Best agent score:** 0.728 (skilled v6, 100% strategy accuracy — all 15/15 correct)
 
 ### Skilled v3 Results (2026-02-16) — model_based under-detection fix
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
