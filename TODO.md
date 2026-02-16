@@ -73,7 +73,7 @@
 ## Phase 3: Improve Skilled Analyzer
 - [x] Fix whale over-classification (anti-whale overrides for small avg + high count)
 - [x] Fix model_based under-detection (RN1, S-Works now correctly classified)
-- [ ] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
+- [x] Fix market_maker detection (near-50% win rate + massive volume + thin edge)
 - [ ] Fix info_edge detection (high win rate on politics/events + sporadic timing)
 - [ ] Reduce model_based over-classification bias
 - [ ] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact
@@ -94,7 +94,7 @@
 - **Last updated:** 2026-02-16
 - **Baseline score:** 0.246 (gpt-4o-mini, 6.7% strategy accuracy)
 - **Skilled v1 score:** 0.479 (gpt-4o-mini + 5 skills, 26.7% strategy accuracy)
-- **Best agent score:** 0.575 (skilled v3, model_based detection fixes)
+- **Best agent score:** 0.631 (skilled v4, market_maker detection fix)
 
 ### Skilled v3 Results (2026-02-16) — model_based under-detection fix
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
@@ -104,3 +104,13 @@
 - **Total time:** 201s (~13s/wallet)
 - **Fixed:** S-Works whale→model_based ✅, RN1 already correct ✅
 - **Still failing:** SwissMiss (model_based→whale), GamblingIsAllYouNeed (model_based→scalper), aenews2 (info_edge→whale), 0xf705 (contrarian→model_based), 0x8dxd (scalper→market_maker)
+
+### Skilled v4 Results (2026-02-16) — market_maker detection fix
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.631 (+10% vs v3, +156% vs baseline)
+- **Strategy accuracy:** 80.0% (12/15 correct)
+- **Evidence recall:** 49.3%
+- **Total time:** 193s (~13s/wallet)
+- **Root cause:** data_fetcher timeout was 30s, too short for large wallets (69K+ positions). Increased to 120s.
+- **Fixed:** swisstony (now market_maker ✅), sovereign2013 (now market_maker ✅), GamblingIsAllYouNeed (now model_based ✅), 0x8dxd (now scalper ✅)
+- **Still failing:** SwissMiss (model_based→whale), aenews2 (info_edge→model_based), 0xf705 (contrarian→scalper)

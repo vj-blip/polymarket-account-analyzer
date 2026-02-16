@@ -50,7 +50,7 @@ async def get_top_wallets(limit: int = 50) -> list[WalletProfile]:
 
 async def get_wallet_positions(wallet: str) -> list[Position]:
     """Get all positions (resolved + open) for a wallet."""
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=120) as client:
         try:
             resp = await client.get(f"{ALGOARENA_API}/api/algos/positions/{wallet}")
             resp.raise_for_status()

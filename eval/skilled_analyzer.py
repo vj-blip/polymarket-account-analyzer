@@ -151,10 +151,21 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
         )
     
     # === INFO EDGE detection (ONLY for non-sports event markets) ===
+    low_entry = getattr(sizing, 'avg_entry_price', 0.5) < 0.45 or getattr(sizing, 'low_odds_pct', 0) > 0.30
+    politics_count = sum(v for c, v in cat_counts.items() if any(kw in str(c).lower() for kw in ['politic', 'news', 'election']))
+    politics_pct = politics_count / total_cat if total_cat > 0 else 0
+    
     if avg_pos > 30_000 and has_strong_edge and has_non_sports and not sports_dominant:
         hints.append(f"⚠️ STRONG INFO EDGE SIGNAL: avg position ${avg_pos:,.0f} with win rate {win_rate:.0%} and profit factor {profit_factor:.1f}. Large positions WITH a strong consistent edge on event markets (politics/news/crypto) strongly suggests information advantage, NOT whale.")
         if politics_focus:
             hints.append(f"  → Politics/news focus confirms info edge — these markets reward early/insider information.")
+    elif has_non_sports and not sports_dominant and politics_pct > 0.25 and low_entry and profit_factor > 1.1:
+        hints.append(
+            f"⚠️ INFO EDGE SIGNAL (news-focused): {politics_pct:.0%} politics/news markets, "
+            f"avg entry price {getattr(sizing, 'avg_entry_price', 0.5):.2f}, "
+            f"low-odds entries {getattr(sizing, 'low_odds_pct', 0):.0%}, PF {profit_factor:.1f}. "
+            f"News/politics focus + early entry (low prices) = info edge trader who gets in before markets move. "
+            f"NOT whale — whales bet BIG without timing advantage; info_edge traders bet BIG because they KNOW the outcome.")
     elif avg_pos > 30_000 and has_moderate_edge and has_non_sports and not sports_dominant and num_positions > 100:
         hints.append(f"⚠️ POSSIBLE INFO EDGE: avg position ${avg_pos:,.0f} with win rate {win_rate:.0%}, profit factor {profit_factor:.1f}, trading event markets. Consider info_edge over whale.")
     
@@ -203,14 +214,29 @@ def rule_based_hints(sizing, flow, markets, num_positions: int) -> str:
     
     # === MARKET MAKER detection: VERY specific — near-50% WR + thin edge + huge volume ===
     # Tightened: requires very thin edge AND very high position count
+    # EXCEPTION: crypto-dominant wallets are more likely scalpers (execution timing on short-timeframe markets)
+    crypto_top = len(top_cats) > 0 and 'crypto' in str(top_cats[0]).lower()
+    crypto_pct = (cat_values[0] / total_cat) if crypto_top and total_cat > 0 else 0
+    crypto_dominant_hint = crypto_top and crypto_pct > 0.60
+    
     if num_positions > 20_000 and avg_pos < 150_000:
         edge = abs(win_rate - 0.5)
         if edge < 0.03 and profit_factor < 1.15:
-            hints.append(
-                f"⚠️ STRONG MARKET MAKER SIGNAL: {num_positions} positions (>20K), "
-                f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%} (edge {edge:.1%}), "
-                f"PF {profit_factor:.2f}. Near-50% WR + razor-thin edge + massive volume = market maker."
-            )
+            if crypto_dominant_hint:
+                hints.append(
+                    f"⚠️ CRYPTO SCALPER SIGNAL: {num_positions} positions (>20K), "
+                    f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%} (edge {edge:.1%}), "
+                    f"PF {profit_factor:.2f}, CRYPTO-DOMINANT ({crypto_pct:.0%}). "
+                    f"Near-50% WR + crypto focus = scalper/arb on short-timeframe markets "
+                    f"(e.g., Bitcoin Up/Down). They profit from execution timing, not liquidity provision. "
+                    f"Consider SCALPER over market_maker."
+                )
+            else:
+                hints.append(
+                    f"⚠️ STRONG MARKET MAKER SIGNAL: {num_positions} positions (>20K), "
+                    f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%} (edge {edge:.1%}), "
+                    f"PF {profit_factor:.2f}. Near-50% WR + razor-thin edge + massive volume = market maker."
+                )
     elif num_positions > 40_000 and avg_pos < 150_000:
         hints.append(
             f"⚠️ POSSIBLE MARKET MAKER: {num_positions} positions (>40K), "
@@ -368,14 +394,27 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"win rate {win_rate:.0%}, Sharpe {sharpe} — large bets without edge, not politics/news")
     
     # === INFO_EDGE RESCUE ===
-    # If classified as whale but trades politics/news/crypto with EXCEPTIONAL edge → info_edge
-    # Tightened: requires very high WR (>75%) or very high PF (>3.0) to distinguish from model_based
-    # Model_based traders can also trade politics with moderate edge (60-70% WR, PF 1-2)
+    # If classified as whale but trades politics/news/crypto → info_edge
+    # Two tiers:
+    #   1. Exceptional edge (WR>75% or PF>3.0) → always rescue
+    #   2. Politics-HEAVY focus (>30% of positions) + profitable + low entry prices → rescue
+    #      Info_edge traders often have moderate WR because they take many positions,
+    #      but their real signal is MARKET SELECTION (news/politics events) + early entry.
     if predicted == "whale" and has_politics_news and not sports_dominant:
+        politics_count = sum(v for c, v in cat_counts.items() if any(kw in str(c).lower() for kw in ['politic', 'news', 'election']))
+        politics_pct = politics_count / total_cat if total_cat > 0 else 0
+        low_entry = getattr(sizing, 'avg_entry_price', 0.5) < 0.45 or getattr(sizing, 'low_odds_pct', 0) > 0.30
+        
         if win_rate > 0.75 or profit_factor > 3.0:
             _do_override("info_edge",
                 f"OVERRIDE whale→info_edge: win rate {win_rate:.0%}, PF {profit_factor:.1f}, "
                 f"trades politics/news/crypto markets — exceptional accuracy suggests information advantage")
+        elif politics_pct > 0.25 and profit_factor > 1.1 and low_entry:
+            _do_override("info_edge",
+                f"OVERRIDE whale→info_edge: {politics_pct:.0%} politics/news markets, "
+                f"PF {profit_factor:.1f}, avg entry {getattr(sizing, 'avg_entry_price', 'N/A'):.2f}, "
+                f"low-odds {getattr(sizing, 'low_odds_pct', 0):.0%}. "
+                f"News-focused + early entry + profitable = information edge trader")
     
     # === MODEL_BASED RESCUE ===
     # If classified as whale but has high trade count + consistent edge → model_based
@@ -425,6 +464,20 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
                 f"OVERRIDE whale→model_based: {num_positions} positions (>10K) with avg ${avg_pos:,.0f} (<$50K), "
                 f"win rate {win_rate:.0%}, CV {cv:.2f} — high-frequency systematic trading, not whale")
     
+    # === MODEL_BASED → INFO_EDGE for politics/news-heavy wallets with early entry ===
+    # Model_based is systematic quant trading; info_edge is news/event-driven with timing advantage.
+    # Key distinction: politics/news markets + low entry prices = getting in early on events they KNOW about.
+    if predicted == "model_based" and has_politics_news and not sports_dominant:
+        politics_count = sum(v for c, v in cat_counts.items() if any(kw in str(c).lower() for kw in ['politic', 'news', 'election']))
+        politics_pct = politics_count / total_cat if total_cat > 0 else 0
+        low_entry = getattr(sizing, 'avg_entry_price', 0.5) < 0.45 or getattr(sizing, 'low_odds_pct', 0) > 0.30
+        if politics_pct > 0.25 and low_entry and profit_factor > 1.1:
+            _do_override("info_edge",
+                f"OVERRIDE model_based→info_edge: {politics_pct:.0%} politics/news markets, "
+                f"avg entry {getattr(sizing, 'avg_entry_price', 'N/A'):.2f}, "
+                f"low-odds {getattr(sizing, 'low_odds_pct', 0):.0%}, PF {profit_factor:.1f}. "
+                f"News-focused + early entry = information edge, not systematic quant model.")
+
     # === INFO_EDGE → MODEL_BASED for high position count or moderate edge ===
     # True info_edge traders have EXCEPTIONAL accuracy (WR >75% or PF >3.0) on few bets
     # Model_based traders have MODERATE but consistent edge across many positions
@@ -472,13 +525,24 @@ def _apply_hard_overrides(data: dict, sizing, flow, markets, num_positions: int,
     
     # === MARKET MAKER OVERRIDE (very tight) ===
     # Only override when: massive count + near-exactly-50% WR + very thin edge
+    # EXCEPTION: crypto-dominant wallets with ~50% WR are more likely scalpers/arb
+    # (e.g., Bitcoin Up/Down short-timeframe traders who profit from execution timing)
+    crypto_dominant = any('crypto' in str(c).lower() for c in top_cats[:1]) and len(top_cats) > 0 and (cat_values[0] / total_cat > 0.60 if cat_values else False)
     if predicted != "market_maker" and num_positions > 30_000 and avg_pos < 150_000:
         edge = abs(win_rate - 0.5)
         if edge < 0.02 and profit_factor < 1.10:
-            _do_override("market_maker",
-                f"OVERRIDE {predicted}→market_maker: {num_positions} positions, "
-                f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%}, PF {profit_factor:.2f} — "
-                f"razor-thin edge + massive volume = market maker")
+            if crypto_dominant:
+                # Crypto-focused near-50% WR = scalper/arb, not market maker
+                # They profit from execution timing on short-timeframe crypto markets
+                _do_override("scalper",
+                    f"OVERRIDE {predicted}→scalper: {num_positions} positions, "
+                    f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%}, PF {profit_factor:.2f}, "
+                    f"CRYPTO-DOMINANT — short-timeframe crypto trading with execution edge, not market making")
+            else:
+                _do_override("market_maker",
+                    f"OVERRIDE {predicted}→market_maker: {num_positions} positions, "
+                    f"avg ${avg_pos:,.0f}, win rate {win_rate:.0%}, PF {profit_factor:.2f} — "
+                    f"razor-thin edge + massive volume = market maker")
     
     return data
 
