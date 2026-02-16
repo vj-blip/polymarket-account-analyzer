@@ -5,6 +5,7 @@ from .sizing_analyzer import analyze_sizing
 from .market_analyzer import analyze_markets
 from .flow_analyzer import analyze_flow
 from .pattern_analyzer import analyze_patterns
+from .correlation_analyzer import analyze_correlations
 
 __all__ = [
     "analyze_timing",
@@ -12,4 +13,5 @@ __all__ = [
     "analyze_markets",
     "analyze_flow",
     "analyze_patterns",
+    "analyze_correlations",
 ]

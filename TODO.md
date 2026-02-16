@@ -48,9 +48,19 @@
 - [x] **Market Analyzer** — category focus, market diversity, HHI concentration, outcome bias
 - [x] **Flow Analyzer** — win rate, profit factor, accumulation, risk/reward, monthly trends
 - [x] **Pattern Analyzer** — win/loss streaks, drawdown analysis, R² curve, post-loss behavior
-- [x] **Skilled Analyzer** — combines all 5 skills → structured LLM prompt → WalletThesis
-- [ ] **Correlation Analyzer** — cross-market hedging, paired positions, portfolio construction
+- [x] **Skilled Analyzer** — combines all 6 skills → structured LLM prompt → WalletThesis
+- [x] **Correlation Analyzer** — cross-market hedging, paired positions, portfolio construction, temporal clustering, opposing pairs
 - [ ] **Speed Analyzer** — time from market creation to first trade (info edge signal)
+
+### Skilled v7 Results (2026-02-16) — Added Correlation Analyzer (6 skills)
+- **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
+- **Composite score:** 0.697 (-4% vs v6)
+- **Strategy accuracy:** 80.0% (12/15 — regression from v6's 100%)
+- **Evidence recall:** 64.0% (same as v6)
+- **Total time:** 285s (~19s/wallet)
+- **Regressions:** kch123 (whale→model_based), 0xf705 (contrarian→hedger — correlation data confused LLM), lhtsports (scalper→model_based)
+- **Root cause:** Correlation analyzer adds hedging/batch signals that shift borderline classifications. Needs tuning in rule-based overrides.
+- **Next:** Fix regressions by tuning overrides for contrarian vs hedger, whale edge cases, scalper detection
 
 ### Skilled v6 Results (2026-02-16) — 100% accuracy! SwissMiss + GamblingIsAllYouNeed fixes
 - **Model:** gpt-4o-mini (analyzer) + gpt-4o (judge)
@@ -96,6 +106,7 @@
 - [x] Fix contrarian detection (0xf705 now correct)
 - [x] Reduce model_based over-classification bias (SwissMiss fixed via sports model_based rescue)
 - [x] Try gpt-4o as analyzer (vs gpt-4o-mini) to see accuracy impact → No improvement (0.686 vs 0.690), same failures
+- [ ] Fix v7 regressions: kch123 whale detection, 0xf705 contrarian vs hedger, lhtsports scalper detection
 - [ ] Build agent that uses skills from Phase 2
 - [ ] Run eval, compare to baseline
 - [ ] Iterate on tool selection and prompting

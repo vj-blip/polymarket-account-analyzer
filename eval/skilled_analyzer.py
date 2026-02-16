@@ -22,7 +22,7 @@ from .run_eval import evaluate_analyzer
 
 import sys
 sys.path.insert(0, str(__file__).rsplit("/eval/", 1)[0])
-from skills import analyze_timing, analyze_sizing, analyze_markets, analyze_flow, analyze_patterns
+from skills import analyze_timing, analyze_sizing, analyze_markets, analyze_flow, analyze_patterns, analyze_correlations
 
 load_dotenv()
 
@@ -33,7 +33,7 @@ JUDGE_MODEL = "gpt-4o"
 _client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 
-SKILLED_PROMPT = """You are an expert Polymarket trading strategy analyst. You have been given structured analysis from 5 specialized tools that examined a wallet's trading history.
+SKILLED_PROMPT = """You are an expert Polymarket trading strategy analyst. You have been given structured analysis from 6 specialized tools that examined a wallet's trading history.
 
 Your job: Synthesize these analyses into a precise strategy classification.
 
@@ -79,6 +79,7 @@ If avg position > $50K AND (CV > 1.5 OR Sharpe < 0.5 OR win_rate < 0.5 OR positi
 4. Check FLOW — win rate, profit factor, edge magnitude
 5. Check PATTERNS — is edge consistent? Steady grinder or volatile?
 6. Check TIMING — automated (consistent daily) or event-driven (sporadic)?
+7. Check CORRELATION — hedging across markets? Batch entries? Portfolio construction?
 
 ## Important Rules:
 - Be SPECIFIC in evidence — cite numbers from the analysis
@@ -306,12 +307,13 @@ async def skilled_analyze(wallet: str) -> WalletThesis:
         for p in positions_raw
     ]
 
-    # Run all 5 skills
+    # Run all 6 skills
     timing = analyze_timing(positions)
     sizing = analyze_sizing(positions)
     markets = analyze_markets(positions)
     flow = analyze_flow(positions)
     patterns = analyze_patterns(positions)
+    correlations = analyze_correlations(positions)
 
     # Generate rule-based hints
     hints = rule_based_hints(sizing, flow, markets, len(positions))
@@ -327,7 +329,8 @@ async def skilled_analyze(wallet: str) -> WalletThesis:
     context += sizing.to_text() + "\n\n"
     context += markets.to_text() + "\n\n"
     context += flow.to_text() + "\n\n"
-    context += patterns.to_text() + "\n"
+    context += patterns.to_text() + "\n\n"
+    context += correlations.to_text() + "\n"
     context += hints
 
     messages = [
